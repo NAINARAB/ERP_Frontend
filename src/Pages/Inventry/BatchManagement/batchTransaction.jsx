@@ -83,7 +83,7 @@ function SearchPanel({ onSearch, loading, initialForm }) {
     ).sort((a, b) => a.label.localeCompare(b.label));
 
     const batchOptions = Array.from(
-        new Map(getFilteredData('batch').map(r => [r.batch, { value: r.batch, label: r.batch }])).values()
+        new Map(getFilteredData('batch').map(r => [r.batch, { value: r.batch, label: r.batch, batch_id: r.batch_id }])).values()
     ).sort((a, b) => a.label.localeCompare(b.label));
 
     const canSearch = form.batch && form.item;
@@ -126,7 +126,7 @@ function SearchPanel({ onSearch, loading, initialForm }) {
 
                 <Select
                     value={form.batch}
-                    onChange={(e) => setForm({ ...form, batch: e })}
+                    onChange={(e) => setForm({ ...form, batch: e, batch_id: e ? e.batch_id : null })}
                     options={batchOptions}
                     styles={customSelectStyles}
                     isSearchable={true}
@@ -202,12 +202,12 @@ function StatCard({ title, value, icon, color, bgColor }) {
 }
 
 /* ------------------------------ Main ------------------------------ */
-const BatchTransactionView = () => {
+const BatchTransactionView = ({ defaultParams, hideSearch }) => {
     const location = useLocation();
     const [loading, setLoading] = useState(false);
     const [batchData, setBatchData] = useState(null);
 
-    const initialFormState = location.state || null;
+    const initialFormState = defaultParams || location.state || null;
 
     useEffect(() => {
         if (initialFormState) {
@@ -222,8 +222,7 @@ const BatchTransactionView = () => {
 
     const handleSearch = (searchParams) => {
         setLoading(true);
-        let url = `inventory/batchMaster/batchTransactions?batch_name=${searchParams.batch_name}&item_id=${searchParams.item_id}`;
-        if (searchParams.batch_id) url += `&batch_id=${searchParams.batch_id}`;
+        let url = `inventory/batchMaster/batchTransactions?batch_id=${searchParams.batch_id}`;
 
         fetchLink({ address: url })
             .then(data => {
@@ -262,6 +261,7 @@ const BatchTransactionView = () => {
             Field_Name: 'transType', Fied_Data: 'string', ColumnHeader: 'Type', isVisible: 1, isCustomCell: true,
             Cell: ({ row }) => {
                 const isIn = IN_MODULES.includes(row.transType);
+                const displayType = row.transType ;
                 return (
                     <Box
                         sx={{
@@ -273,7 +273,7 @@ const BatchTransactionView = () => {
                             letterSpacing: '0.03em'
                         }}
                     >
-                        {row.transType}
+                        {displayType}
                     </Box>
                 );
             }
@@ -297,9 +297,11 @@ const BatchTransactionView = () => {
     ];
 
     return (
-        <Box sx={{ p: { xs: 2, md: 3 }, minHeight: '100vh' }}>
+        <Box sx={{ p: hideSearch ? 0 : { xs: 2, md: 3 }, minHeight: hideSearch ? 'auto' : '100vh' }}>
 
-            <SearchPanel onSearch={handleSearch} loading={loading} initialForm={initialFormState} />
+            {!hideSearch && (
+                <SearchPanel onSearch={handleSearch} loading={loading} initialForm={initialFormState} />
+            )}
 
             {batchData && (
                 <Grid container spacing={3} mb={4}>

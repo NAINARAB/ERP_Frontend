@@ -3,12 +3,18 @@ import { fetchLink } from '../../../Components/fetchComponent';
 import { ISOString, isEqualNumber } from '../../../Components/functions';
 import AppTableComponent from '../../../Components/appTable/appTableComponent';
 import { IconButton, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, Button, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
-import { FilterAlt } from '@mui/icons-material';
+import { CompareArrows, FilterAlt, QueryStats, Warehouse } from '@mui/icons-material';
+import AppDialog from "../../../Components/appDialogComponent";
+import BatchTraceFlow from "./BatchTraceFlow";
+import BatchTransactionView from "./batchTransaction";
+import { createCol } from '../../../Components/filterableTable2';
 
 const BatchDetailsList = ({ loadingOn, loadingOff }) => {
     const [dataArray, setDataArray] = useState([]);
-    
+
     const [filterDialog, setFilterDialog] = useState(false);
+    const [traceDialogParams, setTraceDialogParams] = useState(null);
+    const [transactionDialogParams, setTransactionDialogParams] = useState(null);
     const [dateFilter, setDateFilter] = useState({
         Fromdate: ISOString(),
         Todate: ISOString(),
@@ -74,10 +80,10 @@ const BatchDetailsList = ({ loadingOn, loadingOff }) => {
             { Field_Name: 'godownName', Fied_Data: 'string', ColumnHeader: 'Godown', isVisible: 1 },
             { Field_Name: 'inwardQty', Fied_Data: 'number', ColumnHeader: 'Inward Qty', isVisible: 0 },
             { Field_Name: 'consumedQty', Fied_Data: 'number', ColumnHeader: 'Consumed Qty', isVisible: 1 },
-            { 
-                Field_Name: 'availableQty', 
-                Fied_Data: 'number', 
-                ColumnHeader: 'Available Qty', 
+            {
+                Field_Name: 'availableQty',
+                Fied_Data: 'number',
+                ColumnHeader: 'Available Qty',
                 isVisible: 1,
                 isCustomCell: true,
                 Cell: ({ row }) => {
@@ -92,6 +98,60 @@ const BatchDetailsList = ({ loadingOn, loadingOff }) => {
                     );
                 }
             },
+            ...[
+                createCol('consumedPackQuantity', 'number', 'Consumed Pack Quantity'),
+                createCol('availablePackQuantity', 'number', 'Available Pack Quantity'),
+
+                createCol('stockGroupName', 'string', 'Stock Group'),
+                createCol('groupName', 'string', 'Group'),
+                createCol('brandName', 'string', 'Brand'),
+                createCol('gradeItemGroup', 'string', 'Grade Item Group'),
+                createCol('subGroup', 'string', 'Sub Group'),
+            ],
+            {
+                Field_Name: 'action',
+                Fied_Data: 'string',
+                ColumnHeader: 'Trace',
+                isVisible: 1,
+                isCustomCell: true,
+                align: 'center',
+                Cell: ({ row }) => (
+                    <>
+                        <IconButton
+                            size="small"
+                            color="primary"
+                            title="Trace Batch"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setTraceDialogParams({
+                                    batch: row.batchNo,
+                                    item: { value: row.itemId, label: row.productName },
+                                    godown: row.godownId ? { value: row.godownId, label: row.godownName } : null,
+                                    batch_id: row.batchId
+                                });
+                            }}
+                        >
+                            <QueryStats fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setTransactionDialogParams({
+                                    batch_id: row.batchId,
+                                    batch: row.batchNo,
+                                    item: { value: row.itemId, label: row.productName },
+                                    godown: row.godownId ? { value: row.godownId, label: row.godownName } : null
+                                });
+                            }}
+                            size="small"
+                            color="primary"
+                            title="Stock transaction"
+                        >
+                            <CompareArrows />
+                        </IconButton>
+                    </>
+                )
+            }
         ];
     }, []);
 
@@ -99,6 +159,8 @@ const BatchDetailsList = ({ loadingOn, loadingOff }) => {
         <>
             <AppTableComponent
                 title="Detailed Batch Listing"
+                stateUrl='/erp/batchManagement/batchList'
+                stateGroup='BatchList'
                 dataArray={dataArray}
                 columns={columns}
                 EnableSerialNumber
@@ -159,6 +221,29 @@ const BatchDetailsList = ({ loadingOn, loadingOff }) => {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            <AppDialog
+                open={Boolean(traceDialogParams)}
+                onClose={() => setTraceDialogParams(null)}
+                title="Trace Batch"
+                // maxWidth="xl"
+                fullScreen
+            >
+                {traceDialogParams && (
+                    <BatchTraceFlow defaultParams={traceDialogParams} hideSearch={true} />
+                )}
+            </AppDialog>
+
+            <AppDialog
+                open={Boolean(transactionDialogParams)}
+                onClose={() => setTransactionDialogParams(null)}
+                // maxWidth="xl"
+                fullScreen
+            >
+                {transactionDialogParams && (
+                    <BatchTransactionView defaultParams={transactionDialogParams} hideSearch={true} />
+                )}
+            </AppDialog>
         </>
     );
 };

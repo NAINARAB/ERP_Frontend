@@ -7,6 +7,10 @@ import AppTableComponent from '../../../Components/appTable/appTableComponent';
 import { Dialog, DialogContent, DialogActions, Button, IconButton, Tooltip, CircularProgress } from "@mui/material";
 import { FilterAlt, QueryStats, Search, Warehouse } from "@mui/icons-material";
 import { batchListingColumns } from "./variable";
+import AppDialog from "../../../Components/appDialogComponent";
+import { ButtonActions } from "../../../Components/filterableTable2";
+import BatchTraceFlow from "./BatchTraceFlow";
+import BatchTransactionView from "./batchTransaction";
 const IN_MODULES = ["PURCHASE", "PRODUCTION", "CREDIT_NOTE", "MATERIAL_INWARD"];
 const OUT_MODULES = ["SALES", "CONSUMPTION", "DEBIT_NOTE", "OTHER_GODOWN"];
 
@@ -88,6 +92,8 @@ const BatchSummaryExpander = ({ row }) => {
 const BatchListing = ({ loadingOn, loadingOff, ReadRights, EditRights, PrintRights, DeleteRights }) => {
     const navigate = useNavigate();
     const [dataArray, setDataArray] = useState([]);
+    const [traceDialogParams, setTraceDialogParams] = useState(null);
+    const [transactionDialogParams, setTransactionDialogParams] = useState(null);
     const [dateFilter, setDateFilter] = useState({
         Fromdate: ISOString(),
         Todate: ISOString(),
@@ -140,12 +146,11 @@ const BatchListing = ({ loadingOn, loadingOff, ReadRights, EditRights, PrintRigh
                         title="Trace Batch"
                         onClick={(e) => {
                             e.stopPropagation();
-                            navigate('/erp/batchManagement/batchReport', {
-                                state: {
-                                    batch: row.batch,
-                                    item: { value: row.item_id, label: row.productNameGet },
-                                    godown: row.godown_id ? { value: row.godown_id, label: row.godownName } : null
-                                }
+                            setTraceDialogParams({
+                                batch: row.batch,
+                                item: { value: row.item_id, label: row.productNameGet },
+                                godown: row.godown_id ? { value: row.godown_id, label: row.godownName } : null,
+                                batch_id: row.id
                             });
                         }}
                     >
@@ -154,13 +159,11 @@ const BatchListing = ({ loadingOn, loadingOff, ReadRights, EditRights, PrintRigh
                     <IconButton
                         onClick={(e) => {
                             e.stopPropagation();
-                            navigate('/erp/batchManagement/batchTransaction', {
-                                state: {
-                                    batch_id: row.id,
-                                    batch: row.batch,
-                                    item: { value: row.item_id, label: row.productNameGet },
-                                    godown: row.godown_id ? { value: row.godown_id, label: row.godownName } : null
-                                }
+                            setTransactionDialogParams({
+                                batch_id: row.id,
+                                batch: row.batch,
+                                item: { value: row.item_id, label: row.productNameGet },
+                                godown: row.godown_id ? { value: row.godown_id, label: row.godownName } : null
                             });
                         }}
                         size="small"
@@ -279,8 +282,29 @@ const BatchListing = ({ loadingOn, loadingOff, ReadRights, EditRights, PrintRigh
                 </DialogActions>
             </Dialog>
 
+            <AppDialog
+                open={Boolean(traceDialogParams)}
+                onClose={() => setTraceDialogParams(null)}
+                title="Trace Batch"
+                maxWidth="xl"
+            >
+                {traceDialogParams && (
+                    <BatchTraceFlow defaultParams={traceDialogParams} hideSearch={true} />
+                )}
+            </AppDialog>
+
+            <AppDialog
+                open={Boolean(transactionDialogParams)}
+                onClose={() => setTransactionDialogParams(null)}
+                title="Stock Transaction"
+                maxWidth="xl"
+            >
+                {transactionDialogParams && (
+                    <BatchTransactionView defaultParams={transactionDialogParams} hideSearch={true} />
+                )}
+            </AppDialog>
         </>
-    )
-}
+    );
+};
 
 export default BatchListing

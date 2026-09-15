@@ -5,13 +5,10 @@ import {
     Stack,
     Paper,
     Typography,
-    TextField,
     Button,
     LinearProgress,
     CircularProgress,
     Alert,
-    InputAdornment,
-    IconButton,
     Tooltip,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
@@ -19,7 +16,6 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined";
 import WarehouseOutlinedIcon from "@mui/icons-material/WarehouseOutlined";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
 import TagOutlinedIcon from "@mui/icons-material/TagOutlined";
@@ -724,10 +720,10 @@ function EmptyState({ icon: Icon, children }) {
 
 /* ------------------------------ Main ------------------------------ */
 
-export default function BatchTraceFlow() {
+export default function BatchTraceFlow({ defaultParams, hideSearch }) {
     const location = useLocation();
     const navigate = useNavigate();
-    const initialFormRef = useRef(location.state);
+    const initialFormRef = useRef(defaultParams || location.state);
     const containerRef = useRef(null);
 
     // currentBatch holds the raw API response data[0] for the searched batch
@@ -747,13 +743,16 @@ export default function BatchTraceFlow() {
 
     useEffect(() => {
         if (initialFormRef.current && initialFormRef.current.batch && initialFormRef.current.item) {
-            const { batch, item, godown } = initialFormRef.current;
+            const { batch, item, godown, batch_id } = initialFormRef.current;
             handleSearch({
                 batch_name: batch,
                 item_id: item.value,
-                godown_id: godown?.value || ""
+                godown_id: godown?.value || "",
+                batch_id: batch_id
             });
-            navigate(location.pathname, { replace: true, state: null });
+            if (!defaultParams) {
+                navigate(location.pathname, { replace: true, state: null });
+            }
         }
     }, []);
 
@@ -916,7 +915,9 @@ export default function BatchTraceFlow() {
     return (
         <Box>
 
-            <SearchPanel onSearch={handleSearch} loading={loading} initialForm={initialFormRef.current} />
+            {!hideSearch && (
+                <SearchPanel onSearch={handleSearch} loading={loading} initialForm={initialFormRef.current} />
+            )}
 
             {error && (
                 <Alert severity="error" sx={{ mt: 1.75, borderRadius: 2.5 }}>
