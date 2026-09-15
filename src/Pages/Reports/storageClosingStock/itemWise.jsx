@@ -25,13 +25,10 @@ const EXCLUDED_QTY_FIELDS = ["Pack_Qty"];
 const isQtyField = (fieldName) =>
     QTY_FIELD_PATTERN.test(fieldName || "") && !EXCLUDED_QTY_FIELDS.includes(fieldName);
 
-// Field used to group the Godown Wise report by default on initial load.
+
 const GODOWN_GROUP_FIELD = "Godown_Name";
 
-// Strips spaces, hyphens, and other special characters so a search like
-// "2000white" or "gramaa" can match "2000 WHITEGRAM-AA 30KG" regardless of
-// how the original string is punctuated/spaced. Kept in sync with the
-// same helper in CustomerClosingStockReport.jsx.
+
 const normalizeForSearch = (value) =>
     (value ?? "").toString().toLowerCase().replace(/[^a-z0-9]/g, "");
 
@@ -68,8 +65,7 @@ const ItemWiseStockReport = ({
 }) => {
     const [reportData, setReportData] = useState([]);
     const [filters, setFilters] = useState({});
-    // Godown Wise defaults to grouping by Godown Name on initial load unless
-    // the caller explicitly passed a different defaultGrouping.
+
     const [groupBy, setGroupBy] = useState(
         defaultGrouping || (api === "godownWise" ? GODOWN_GROUP_FIELD : "")
     );
@@ -82,9 +78,7 @@ const ItemWiseStockReport = ({
     const [expenseReportData, setExpenseReportData] = useState([]);
     const [selectedProductInfo, setSelectedProductInfo] = useState({});
 
-    // Sort state for the main table. `field` is a Field_Name, `direction` is
-    // 'asc' | 'desc'. Both the top-level table and the expandable (grouped)
-    // sub-tables are sorted using this same state.
+
     const [sortState, setSortState] = useState({ field: null, direction: "asc" });
 
     const propsColumns = storageStockColumns.map((col, colInd) => {
@@ -181,7 +175,7 @@ const ItemWiseStockReport = ({
 
     const showData = useMemo(() => {
         const hasColumnFilters = Object.keys(filters).length > 0;
-        // ✅ CHANGE 2: Update check to handle null values
+
         const hasCommonFilters = Object.values(commonFilters || {}).some(
             (value) => value !== null && value !== undefined && String(value).trim() !== ''
         );
@@ -194,12 +188,6 @@ const ItemWiseStockReport = ({
             (fil) => filterableText(fil.Fied_Data) === "number"
         ).map((col) => col.Field_Name);
 
-        // Qty-type fields need a second, separately-tracked sum: the total of
-        // each row's own "raw / that row's Pack_Qty" value. Summing the raw
-        // quantity for the group and then dividing by the group's *summed*
-        // Pack_Qty (as a naive re-use of formatQtyWithPack would do) produces
-        // a meaningless number once Pack_Qty itself has been added up across
-        // rows with different pack sizes.
         const qtyAggKeys = aggKeys.filter((key) => isQtyField(key));
 
         const groupAggregations = groupFiltered.map((grp) => {
@@ -271,13 +259,12 @@ const ItemWiseStockReport = ({
         }));
     };
 
-    // ✅ CHANGE 3: Updated applyFilters to handle null values from dropdowns
+
     const applyFilters = () => {
         let filtered = [...reportData];
 
         const normalizeValue = (value) => String(value ?? '').toLowerCase().trim();
 
-        // Stock Item Name filter - now works with null or string
         if (commonFilters?.stockItemName) {
             const stockItemSearch = normalizeValue(commonFilters.stockItemName);
             filtered = filtered.filter((item) =>
@@ -286,7 +273,7 @@ const ItemWiseStockReport = ({
             );
         }
 
-        // Grade Item Group filter - now works with null or string
+
         if (commonFilters?.gradeItemGroup) {
             const gradeSearch = normalizeValue(commonFilters.gradeItemGroup);
             filtered = filtered.filter((item) =>
@@ -295,7 +282,6 @@ const ItemWiseStockReport = ({
             );
         }
 
-        // Item Name Modified filter - now works with null or string
         if (commonFilters?.itemNameModified) {
             const modifiedSearch = normalizeValue(commonFilters.itemNameModified);
             filtered = filtered.filter((item) =>
@@ -304,7 +290,6 @@ const ItemWiseStockReport = ({
             );
         }
 
-        // Apply column-specific filters
         for (const column of sortedColumns) {
             if (filters[column.Field_Name]) {
                 if (filters[column.Field_Name].type === "range") {
@@ -655,7 +640,10 @@ const ItemWiseStockReport = ({
             return col;
         }
 
-        const displayLabel = col.ColumnHeader || col.Field_Name?.replace(/_/g, " ");
+        const displayLabel = (typeof col.ColumnHeader === "string" && col.ColumnHeader)
+            ? col.ColumnHeader
+            : col.Field_Name?.replace(/_/g, " ") || "";
+
         const isActive = sortState.field === col.Field_Name;
 
         const header = (
@@ -668,6 +656,10 @@ const ItemWiseStockReport = ({
             </TableSortLabel>
         );
 
+        if (header && typeof header === "object") {
+            header.toString = () => displayLabel;
+        }
+
         if (col.isCustomCell && col.Cell) {
             // Already custom (e.g. qty columns from withQtyDisplay) — keep its Cell, swap only the header.
             return { ...col, ColumnHeader: header };
@@ -679,7 +671,9 @@ const ItemWiseStockReport = ({
             ColumnHeader: header,
             Cell: ({ row }) => {
                 const hasKey = Object.prototype.hasOwnProperty.call(row, col.Field_Name);
-                return hasKey ? formatString(row[col.Field_Name], col.Fied_Data) : "-";
+                if (!hasKey) return "-";
+                const val = formatString(row[col.Field_Name], col.Fied_Data);
+                return val ?? "-";
             },
         };
     };
