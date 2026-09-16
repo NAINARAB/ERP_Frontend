@@ -10,7 +10,9 @@ const BillRefDialog = ({
     line,
     journalBillReference,
     setJournalBillReference,
-    JournalAutoId
+    JournalAutoId,
+    loadingOn,
+    loadingOff
 }) => {
 
     const LineId = line?.LineId;
@@ -22,9 +24,13 @@ const BillRefDialog = ({
     useEffect(() => {
         if (!open || !checkIsNumber(Acc_Id)) return;
         setPendingRefDetails([]);
-        fetchLink({ address: `journal/accountPendingReference?Acc_Id=${Acc_Id}&JournalAutoId=${JournalAutoId}` })
-            .then((data) => setPendingRefDetails(data?.success ? data.data : []))
-            .catch(() => setPendingRefDetails([]));
+        fetchLink({
+            address: `journal/accountPendingReference?
+            Acc_Id=${Acc_Id}&JournalAutoId=${JournalAutoId}`,
+            loadingOn, loadingOff
+        }).then(
+            (data) => setPendingRefDetails(data?.success ? data.data : [])
+        ).catch(() => setPendingRefDetails([]));
     }, [open, Acc_Id, JournalAutoId]);
 
     const keyMatch = (b, row) =>

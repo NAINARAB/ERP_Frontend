@@ -361,6 +361,8 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
                     journalBillReference={journalBillReference}
                     setJournalBillReference={setJournalBillReference}
                     JournalAutoId={journalGeneralInfo?.JournalAutoId || ''}
+                    loadingOn={loadingOn} 
+                    loadingOff={loadingOff}
                 />
             </CardContent>
         </Card>

@@ -99,6 +99,7 @@ export const salesInvoiceGeneralInfo = {
     // Collected_By: '',
     // Collected_Status: '',
     // Payment_Ref_No: '',
+    transaction_type: 'Cash',
 
     Alter_Id: '',
     Created_by: storage?.UserId,

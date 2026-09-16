@@ -18,6 +18,7 @@ import { allowedUserTypesForPreviousDateSalesEdit } from "./variable";
 import TaxInvoicePrint from './taxInvoicePrint';
 import AlterHistoryTable from "../../../Components/alterHistoryTable";
 import AppDialog from "../../../Components/appDialogComponent";
+import { transactionTypes } from "../../Receipts/ReceiptMaster/variable";
 
 const defaultFilters = {
     Fromdate: ISOString(),
@@ -27,7 +28,8 @@ const defaultFilters = {
     SalesPerson: { value: '', label: 'ALL' },
     VoucherType: { value: '', label: 'ALL' },
     Cancel_status: '',
-    withProduct: ''
+    withProduct: '',
+    transaction_type: ''
 };
 
 const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRights, pageID }) => {
@@ -95,13 +97,14 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteR
             SalesPerson = defaultFilters.SalesPerson,
             Cancel_status = defaultFilters.Cancel_status,
             withProduct = defaultFilters.withProduct,
+            transaction_type = defaultFilters.transaction_type
         } = otherSessionFiler;
 
         setFilters(pre => ({
             ...pre,
             Fromdate: Fromdate || defaultFilters.Fromdate,
             Todate: Todate || defaultFilters.Todate,
-            Retailer, VoucherType, CreatedBy, SalesPerson, Cancel_status, withProduct
+            Retailer, VoucherType, CreatedBy, SalesPerson, Cancel_status, withProduct, transaction_type
         }));
 
     }, [sessionValue, pageID]);
@@ -115,7 +118,8 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteR
             VoucherType = defaultFilters.VoucherType,
             CreatedBy = defaultFilters.CreatedBy,
             Cancel_status = defaultFilters.Cancel_status,
-            withProduct = defaultFilters.withProduct
+            withProduct = defaultFilters.withProduct,
+            transaction_type = defaultFilters.transaction_type
         } = otherSessionFiler;
 
         fetchLink({
@@ -126,7 +130,8 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteR
             Created_by=${CreatedBy?.value || ''}&
             VoucherType=${VoucherType?.value || ''}&
             Cancel_status=${Cancel_status}&
-            withProduct=${withProduct}`,
+            withProduct=${withProduct}&
+            transaction_type=${transaction_type}`,
             loadingOn,
             loadingOff
         }).then(data => {
@@ -172,8 +177,10 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteR
                             <td className="border p-2">{row.Sales_Person_Name}</td>
                         </tr>
                         <tr>
+                            <td className="border p-2 bg-light">Transaction Type</td>
+                            <td className="border p-2 bg-light">{row.transaction_type}</td>
                             <td className="border p-2 bg-light">Narration</td>
-                            <td className="border p-2" colSpan={5}>{row.Narration}</td>
+                            <td className="border p-2" colSpan={3}>{row.Narration}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -316,6 +323,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteR
                     // createCol('Total_Tax', 'number', 'Tax'),
                     createCol('Total_Invoice_value', 'number', 'Invoice Value'),
                     createCol('Created_BY_Name', 'string', 'Created By'),
+                    createCol('Created_on', 'time', 'Time'),
                     {
                         ColumnHeader: 'Status',
                         isVisible: 1,
@@ -605,6 +613,22 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteR
                                         />
                                     </td>
                                 </tr>
+
+                                <tr>
+                                    <td style={{ verticalAlign: 'middle' }}>Transaction Type</td>
+                                    <td>
+                                        <select
+                                            value={filters.transaction_type}
+                                            onChange={(e) => setFilters(pre => ({ ...pre, transaction_type: e.target.value }))}
+                                            className="cus-inpt"
+                                        >
+                                            <option value={''} >All</option>
+                                            {transactionTypes.map((type, ind) => (
+                                                <option value={type.value} key={ind}>{type.label}</option>
+                                            ))}
+                                        </select>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -623,6 +647,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteR
                                 VoucherType: filters.VoucherType,
                                 Cancel_status: filters.Cancel_status,
                                 withProduct: filters.withProduct,
+                                transaction_type: filters.transaction_type
                             });
                         }}
                         startIcon={<Search />}
