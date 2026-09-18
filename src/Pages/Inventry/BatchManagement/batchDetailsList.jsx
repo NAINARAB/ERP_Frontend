@@ -186,8 +186,8 @@ const BatchDetailsList = ({ loadingOn, loadingOff }) => {
                                 label="Stock Status"
                             >
                                 <MenuItem value="all">All Batches</MenuItem>
-                                <MenuItem value="available">Positive Stock (\u003e0)</MenuItem>
-                                <MenuItem value="negative">Negative Stock (\u003c0)</MenuItem>
+                                <MenuItem value="available">Positive Stock (+)</MenuItem>
+                                <MenuItem value="negative">Negative Stock (-)</MenuItem>
                                 <MenuItem value="zero">Zero Stock (=0)</MenuItem>
                             </Select>
                         </FormControl>

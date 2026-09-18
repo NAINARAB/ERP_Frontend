@@ -249,7 +249,7 @@ const MainComponent = (props) => {
     const location = useLocation();
     const parseData = JSON.parse(localStorage.getItem("user"));
     const { Autheticate_Id, Company_id } = parseData;
-    const loginAt = localStorage.getItem('loginAt')
+    // const loginAt = localStorage.getItem('loginAt')
     const [sidebar, setSidebar] = useState([]);
     const { contextObj, setContextObj } = useContext(MyContext);
     const [settings, setSettings] = useState(false);
@@ -584,7 +584,53 @@ const MainComponent = (props) => {
 
                             <div className="ms-2 flex-grow-1 d-flex flex-column">
                                 <span className="flex-grow-1 text-dark" >Welcome {parseData?.Name}</span>
-                                <span className="text-muted fa-12">Login Time: {LocalDateWithTime(loginAt)}</span>
+                                {/* <span className="text-muted fa-12">Login Time: {LocalDateWithTime(loginAt)}</span> */}
+                                {(() => {
+                                    const breadcrumbItems = [
+                                        contextObj?.MainMenuData?.name && {
+                                            name: contextObj.MainMenuData.name,
+                                            url: contextObj.MainMenuData.url
+                                        },
+                                        contextObj?.SubMenuData?.name && {
+                                            name: contextObj.SubMenuData.name,
+                                            url: contextObj.SubMenuData.url
+                                        },
+                                        contextObj?.ChildMenuData?.name && {
+                                            name: contextObj.ChildMenuData.name,
+                                            url: contextObj.ChildMenuData.url
+                                        },
+                                        contextObj?.name && {
+                                            name: contextObj.name,
+                                            url: contextObj.url
+                                        }
+                                    ].filter(Boolean).filter((item, idx, arr) => !idx || item.name !== arr[idx - 1].name);
+
+                                    if (breadcrumbItems.length === 0) return null;
+
+                                    return (
+                                        <div className="d-flex align-items-center flex-wrap text-uppercase fa-12 fw-bold" style={{ letterSpacing: '0.4px', marginTop: '2px' }}>
+                                            {breadcrumbItems.map((item, idx) => {
+                                                const isLast = idx === breadcrumbItems.length - 1;
+                                                const isClickable = Boolean(item.url);
+                                                return (
+                                                    <span key={idx} className="d-inline-flex align-items-center">
+                                                        {idx > 0 && <span className="text-muted mx-1" style={{ opacity: 0.7 }}>/</span>}
+                                                        <span
+                                                            className={isClickable ? 'pointer' : ''}
+                                                            style={{
+                                                                color: isLast ? '#1565c0' : '#495057',
+                                                                cursor: isClickable ? 'pointer' : 'default',
+                                                            }}
+                                                            onClick={() => isClickable && nav(item.url)}
+                                                        >
+                                                            {item.name}
+                                                        </span>
+                                                    </span>
+                                                );
+                                            })}
+                                        </div>
+                                    );
+                                })()}
                             </div>
 
 
@@ -615,7 +661,7 @@ const MainComponent = (props) => {
 
                     {/* body content */}
                     <div className="content-body">
-                        <p className="linkColor mb-2 text-uppercase">
+                        {/* <p className="linkColor mb-2 text-uppercase">
                             {contextObj?.MainMenuData && (
                                 <span
                                     className={!contextObj?.MainMenuData?.url ? " text-dark" : 'fw-bold fa-15 pointer'}
@@ -640,7 +686,7 @@ const MainComponent = (props) => {
                                     onClick={() => contextObj.url && nav(contextObj.url)}> / {contextObj?.name}
                                 </span>
                             )}
-                        </p>
+                        </p> */}
 
                         {isEqualNumber(contextObj?.Read_Rights, 1) ? props.children : (
                             <InvalidPageComp message={'Invalid Credential'} />

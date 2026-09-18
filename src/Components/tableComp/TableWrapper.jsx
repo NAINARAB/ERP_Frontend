@@ -43,7 +43,7 @@
  * @property {boolean} [enableFilters]
  */
 
-import React, { useState, useMemo, useEffect, Fragment } from 'react';
+import React, { useState, useMemo, useEffect, useRef, Fragment } from 'react';
 import {
   Paper, Card, TableContainer, Table, TableHead, TableRow,
   TableCell, TableBody, TablePagination, TableSortLabel, IconButton
@@ -63,7 +63,7 @@ const TableWrapper = ({
   onClickFun = null,
   isExpendable = false,
   expandableComp = null,
-  tableMaxHeight = 550,
+  tableMaxHeight = null,
   initialPageCount = 20,
   EnableSerialNumber = false,
   CellSize = 'small',
@@ -76,7 +76,8 @@ const TableWrapper = ({
   MenuButtons = [],
   headerFontSizePx = 13,
   bodyFontSizePx = 13,
-  enableFilters = false
+  enableFilters = false,
+  dynamicHeight = true
 }) => {
   const [columns, setColumns] = useState(propsColumns);
   const [filterDialog, setFilterDialog] = useState(false);
@@ -85,6 +86,51 @@ const TableWrapper = ({
   const [rowsPerPage, setRowsPerPage] = useState(initialPageCount);
   const [sortCriteria, setSortCriteria] = useState([]);
   const [showFullHeight, setShowFullHeight] = useState(true);
+
+  const tableContainerRef = useRef(null);
+  const [dynamicMaxHeight, setDynamicMaxHeight] = useState(null);
+
+  useEffect(() => {
+    if (!dynamicHeight) return;
+
+    const updateTableHeight = () => {
+      if (!tableContainerRef.current) return;
+      const rect = tableContainerRef.current.getBoundingClientRect();
+      const topOffset = rect.top > 0 ? rect.top : 140;
+      const bottomReservedSpace = disablePagination ? 24 : 76;
+      const availableHeight = window.innerHeight - topOffset - bottomReservedSpace;
+      const calculatedHeight = Math.max(220, Math.floor(availableHeight));
+      setDynamicMaxHeight(calculatedHeight);
+    };
+
+    updateTableHeight();
+
+    window.addEventListener('resize', updateTableHeight);
+
+    let resizeObserver;
+    if (typeof ResizeObserver !== 'undefined' && tableContainerRef.current) {
+      resizeObserver = new ResizeObserver(() => {
+        updateTableHeight();
+      });
+      if (tableContainerRef.current.parentElement) {
+        resizeObserver.observe(tableContainerRef.current.parentElement);
+      }
+    }
+
+    const timer = setTimeout(updateTableHeight, 150);
+
+    return () => {
+      window.removeEventListener('resize', updateTableHeight);
+      if (resizeObserver) resizeObserver.disconnect();
+      clearTimeout(timer);
+    };
+  }, [dynamicHeight, disablePagination, dataArray?.length]);
+
+  const useDynamic = dynamicHeight && (!tableMaxHeight || tableMaxHeight === 550);
+  const resolvedHeight = useDynamic
+    ? (dynamicMaxHeight ? `${dynamicMaxHeight}px` : 'calc(100vh - 220px)')
+    : (typeof tableMaxHeight === 'number' ? `${tableMaxHeight}px` : (tableMaxHeight || 'calc(100vh - 220px)'));
+  const tableHeight = (showFullHeight && maxHeightOption) ? 'max-content' : resolvedHeight;
 
   const sortedColumns = useMemo(() => {
     return [...columns].sort((a, b) => (a?.OrderBy && b?.OrderBy ? a.OrderBy - b.OrderBy : 0));
@@ -195,7 +241,7 @@ const TableWrapper = ({
         {title && <h6 className="fw-bold text-muted m-0">{title}</h6>}
       </div>
 
-      <TableContainer sx={{ maxHeight: showFullHeight && maxHeightOption ? 'max-content' : tableMaxHeight }}>
+      <TableContainer ref={tableContainerRef} sx={{ maxHeight: tableHeight }}>
         <Table stickyHeader size={CellSize}>
           <TableHead>
             <TableRow>
@@ -312,7 +358,7 @@ TableWrapper.defaultProps = {
   onClickFun: null,
   isExpendable: false,
   expandableComp: null,
-  tableMaxHeight: 550,
+  tableMaxHeight: null,
   initialPageCount: 20,
   EnableSerialNumber: false,
   CellSize: 'small',
@@ -325,5 +371,6 @@ TableWrapper.defaultProps = {
   MenuButtons: [],
   headerFontSizePx: 13,
   bodyFontSizePx: 13,
-  enableFilters: false
+  enableFilters: false,
+  dynamicHeight: true
 };

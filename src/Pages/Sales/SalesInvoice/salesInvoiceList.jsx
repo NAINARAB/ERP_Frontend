@@ -455,7 +455,6 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteR
                     </>
                 }
                 isExpendable={true}
-                tableMaxHeight={550}
                 expandableComp={ExpendableComponent}
             />
 

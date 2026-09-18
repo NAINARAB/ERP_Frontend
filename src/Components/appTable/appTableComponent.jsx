@@ -1,4 +1,4 @@
-import { useState, useDeferredValue, useEffect } from 'react';
+import { useState, useDeferredValue, useEffect, useRef } from 'react';
 import {
     Card, Table, TableHead, TableBody, TableFooter,
     TableRow, TableCell, TableContainer,
@@ -63,6 +63,7 @@ const AppTableComponent = ({
     headerFontSizePx = 12,
     enableGlobalSearch = false,
     enableColumnFooterRow = true,
+    dynamicHeight = true,
     loadingOn,
     loadingOff
 }) => {
@@ -79,6 +80,45 @@ const AppTableComponent = ({
     const [showFullHeight, setShowFullHeight] = useState(false);
     const [globalSearchText, setGlobalSearchText] = useState("");
     const deferredGlobalSearch = useDeferredValue(globalSearchText);
+
+    const tableContainerRef = useRef(null);
+    const [dynamicMaxHeight, setDynamicMaxHeight] = useState(null);
+
+    useEffect(() => {
+        if (!dynamicHeight) return;
+
+        const updateTableHeight = () => {
+            if (!tableContainerRef.current) return;
+            const rect = tableContainerRef.current.getBoundingClientRect();
+            const topOffset = rect.top > 0 ? rect.top : 140;
+            const bottomReservedSpace = disablePagination ? 24 : 76;
+            const availableHeight = window.innerHeight - topOffset - bottomReservedSpace;
+            const calculatedHeight = Math.max(220, Math.floor(availableHeight));
+            setDynamicMaxHeight(calculatedHeight);
+        };
+
+        updateTableHeight();
+
+        window.addEventListener('resize', updateTableHeight);
+
+        let resizeObserver;
+        if (typeof ResizeObserver !== 'undefined' && tableContainerRef.current) {
+            resizeObserver = new ResizeObserver(() => {
+                updateTableHeight();
+            });
+            if (tableContainerRef.current.parentElement) {
+                resizeObserver.observe(tableContainerRef.current.parentElement);
+            }
+        }
+
+        const timer = setTimeout(updateTableHeight, 150);
+
+        return () => {
+            window.removeEventListener('resize', updateTableHeight);
+            if (resizeObserver) resizeObserver.disconnect();
+            clearTimeout(timer);
+        };
+    }, [dynamicHeight, disablePagination, dataArray?.length]);
 
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
@@ -385,9 +425,15 @@ const AppTableComponent = ({
         });
 
     // Derived styles
-    const resolvedMaxHeight = typeof tableMaxHeight === 'number' ? `${tableMaxHeight}px` : tableMaxHeight;
+    const useDynamic = dynamicHeight && (!tableMaxHeight || tableMaxHeight === 750);
+    const resolvedMaxHeight = (showFullHeight && maxHeightOption)
+        ? 'none'
+        : (useDynamic
+            ? (dynamicMaxHeight ? `${dynamicMaxHeight}px` : 'calc(100vh - 220px)')
+            : (typeof tableMaxHeight === 'number' ? `${tableMaxHeight}px` : (tableMaxHeight || 'calc(100vh - 220px)')));
+
     const containerStyle = {
-        maxHeight: (showFullHeight && maxHeightOption) ? 'none' : resolvedMaxHeight,
+        maxHeight: resolvedMaxHeight,
         overflowY: (showFullHeight && maxHeightOption) ? 'visible' : 'auto'
     };
 
@@ -494,7 +540,7 @@ const AppTableComponent = ({
                 </div>
             </div>
 
-            <TableContainer style={containerStyle}>
+            <TableContainer ref={tableContainerRef} style={containerStyle}>
                 <Table size={CellSize} stickyHeader>
                     <TableHead>
                         <TableRow>

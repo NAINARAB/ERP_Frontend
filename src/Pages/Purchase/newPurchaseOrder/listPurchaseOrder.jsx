@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import {
     getSessionFiltersByPageId, ISOString,
     isValidNumber, LocalDate, Multiplication, NumberFormat, reactSelectFilterLogic,
-    setSessionFilters, toArray, toNumber,
+    setSessionFilters, toArray, toNumber, Addition, isEqualNumber, stringCompare
 } from "../../../Components/functions";
 import { Add, Edit, FilterAlt, Search, Print, Receipt } from "@mui/icons-material";
 import { fetchLink } from "../../../Components/fetchComponent";
@@ -29,6 +29,11 @@ const defaultFilters = {
     Retailer: { value: "", label: "ALL" },
     CreatedBy: { value: "", label: "ALL" },
     VoucherType: { value: "", label: "ALL" },
+    Cancel_status: '',
+    OrderStatus: { value: "", label: "ALL" },
+    ConvertStatus: { value: "", label: "ALL" },
+    TripStatus: { value: "", label: "ALL" },
+    PaidStatus: { value: "", label: "ALL" },
 };
 
 const ListPurchaseOrder = ({ loadingOn, loadingOff, AddRights, pageID }) => {
@@ -58,6 +63,11 @@ const ListPurchaseOrder = ({ loadingOn, loadingOff, AddRights, pageID }) => {
             Retailer = defaultFilters.Retailer,
             CreatedBy = defaultFilters.CreatedBy,
             VoucherType = defaultFilters.VoucherType,
+            Cancel_status = defaultFilters.Cancel_status,
+            OrderStatus = defaultFilters.OrderStatus,
+            ConvertStatus = defaultFilters.ConvertStatus,
+            TripStatus = defaultFilters.TripStatus,
+            PaidStatus = defaultFilters.PaidStatus,
         } = otherSessionFilter;
 
         setFilters((pre) => ({
@@ -67,6 +77,11 @@ const ListPurchaseOrder = ({ loadingOn, loadingOff, AddRights, pageID }) => {
             Retailer,
             CreatedBy,
             VoucherType,
+            Cancel_status,
+            OrderStatus,
+            ConvertStatus,
+            TripStatus,
+            PaidStatus,
         }));
     }, [filterVersion, pageID]);
 
@@ -136,135 +151,46 @@ const ListPurchaseOrder = ({ loadingOn, loadingOff, AddRights, pageID }) => {
     }, [filterVersion, pageID]);
 
     const ExpendableComponent = ({ row }) => {
+        const invoices = toArray(row?.ConvertedInvoice);
         const orderProducts = toArray(row?.Products_List);
-        const staffInvolved = toArray(row?.Staff_Involved_List);
-
-        const renderParameterValue = (param) => {
-            const type = String(param.parameterDataType).toLowerCase();
-            const val1 = param.ParameterValueOne;
-            const val2 = param.ParameterValueTwo;
-
-            if (type === 'number') {
-                if (val1 && val2 && val1 === val2) {
-                    return val1;
-                }
-                return `Min: ${val1 || 0} - Max: ${val2 || 0}`;
-            } else if (type === 'date') {
-                if (val1 && val2 && val1 === val2) {
-                    return LocalDate(val1);
-                }
-                return `Start: ${LocalDate(val1)} - End: ${LocalDate(val2)}`;
-            } else {
-                return val1 || 'N/A';
-            }
-        };
 
         return (
-            <div className="p-4 bg-light border-top">
-                {/* General Information Header */}
-                <div className="card shadow-sm border-0 mb-3">
-                    <div className="card-body py-2 px-3">
-                        <div className="row g-3 text-dark fa-13">
-                            <div className="col-md-3 col-sm-6">
-                                <span className="text-muted d-block fa-11 uppercase fw-semibold">Vendor</span>
-                                <span className="fw-bold text-primary">{row?.Retailer_Name || 'N/A'}</span>
-                            </div>
-                            <div className="col-md-2 col-sm-6">
-                                <span className="text-muted d-block fa-11 uppercase fw-semibold">Branch</span>
-                                <span className="fw-semibold">{row?.Branch_Name || 'N/A'}</span>
-                            </div>
-                            <div className="col-md-2 col-sm-6">
-                                <span className="text-muted d-block fa-11 uppercase fw-semibold">Voucher Type</span>
-                                <span className="fw-semibold text-uppercase">{row?.VoucherTypeGet || 'N/A'}</span>
-                            </div>
-                            <div className="col-md-2 col-sm-6">
-                                <span className="text-muted d-block fa-11 uppercase fw-semibold">PO Date</span>
-                                <span className="fw-semibold">{LocalDate(row?.Po_Date)}</span>
-                            </div>
-                            <div className="col-md-3 col-sm-6">
-                                <span className="text-muted d-block fa-11 uppercase fw-semibold">GST Mode</span>
-                                <span className="fw-semibold badge bg-white text-dark border px-2 py-1 rounded">
-                                    {row?.GST_Inclusive === 1 ? 'Inclusive' : 'Exclusive'} | {row?.IS_IGST === 1 ? 'IGST' : 'CGST/SGST'}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
+            <div className="p-3 bg-light border-top">
                 <div className="row g-3">
-                    {/* Left Panel: Products Table */}
-                    <div className="col-lg-9">
+                    {/* Left Column: Original Order Products */}
+                    <div className="col-lg-6">
                         <div className="card shadow-sm border-0 h-100">
-                            <div className="card-header bg-white border-bottom-0 pt-3 pb-0">
-                                <h6 className="fw-bold text-primary mb-0">Order Products</h6>
+                            <div className="card-header bg-white border-bottom-0 pt-3">
+                                <h6 className="fw-bold text-primary mb-0">Original Order Products</h6>
                             </div>
                             <div className="card-body">
                                 <div className="table-responsive">
                                     <table className="table table-sm table-hover align-middle mb-0 fa-13">
                                         <thead className="table-light">
                                             <tr>
-                                                <th style={{ width: '40px' }}>#</th>
-                                                <th>Product Details</th>
-                                                <th style={{ width: '100px' }}>HSN</th>
-                                                <th className="text-end" style={{ width: '80px' }}>Qty</th>
-                                                <th className="text-end" style={{ width: '100px' }}>Rate</th>
-                                                <th className="text-end" style={{ width: '120px' }}>Taxable Amt</th>
-                                                <th className="text-end" style={{ width: '80px' }}>Tax %</th>
-                                                <th className="text-end" style={{ width: '150px' }}>Tax Amt</th>
-                                                <th className="text-end" style={{ width: '120px' }}>Final Amt</th>
+                                                <th>Product Name</th>
+                                                <th className="text-end">Qty</th>
+                                                <th className="text-end">Billed</th>
+                                                <th className="text-end">Pending</th>
+                                                <th className="text-end">Rate</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {orderProducts.map((prod, i) => {
-                                                const cgst = toNumber(prod.Cgst_Amo);
-                                                const sgst = toNumber(prod.Sgst_Amo);
-                                                const igst = toNumber(prod.Igst_Amo);
-                                                const totalTax = cgst + sgst + igst;
+                                                const ordered = toNumber(prod.Bill_Qty);
+                                                const billed = toNumber(prod.convertedQuantity);
+                                                const pending = ordered - billed;
                                                 return (
                                                     <tr key={i}>
-                                                        <td>{i + 1}</td>
-                                                        <td>
-                                                            <span className="fw-semibold text-dark d-block" title={prod.Product_Name}>
-                                                                {prod.Product_Name || 'N/A'}
-                                                            </span>
-                                                            {(prod.BrandGet || prod.Unit_Name) && (
-                                                                <span className="text-muted fa-11 d-block">
-                                                                    {prod.BrandGet && `Brand: ${prod.BrandGet}`}
-                                                                    {prod.BrandGet && prod.Unit_Name && ' | '}
-                                                                    {prod.Unit_Name && `UOM: ${prod.Unit_Name}`}
-                                                                </span>
-                                                            )}
-                                                            {toArray(prod.parameters).length > 0 && (
-                                                                <div className="mt-1 d-flex flex-wrap gap-1 align-items-center">
-                                                                    {prod.parameters.map((p, pIdx) => (
-                                                                        <span key={pIdx} className="badge bg-light text-dark border px-2 py-0.5 rounded fa-11" style={{ fontSize: '11px', backgroundColor: '#f8f9fa', color: '#495057', border: '1px solid #dee2e6' }}>
-                                                                            <span className="fw-bold text-secondary">{p.parameterNameGet || 'Parameter'}: </span>
-                                                                            {renderParameterValue(p)}
-                                                                        </span>
-                                                                    ))}
-                                                                </div>
-                                                            )}
+                                                        <td className="fw-semibold text-truncate" style={{ maxWidth: '180px' }} title={prod.Product_Name || prod.Item_Name}>
+                                                            {prod.Product_Name || prod.Item_Name}
                                                         </td>
-                                                        <td>{prod.HSN_Code || '-'}</td>
-                                                        <td className="text-end fw-bold">{toNumber(prod.Bill_Qty)}</td>
+                                                        <td className="text-end fw-bold text-dark">{ordered}</td>
+                                                        <td className="text-end fw-bold text-success">{billed}</td>
+                                                        <td className={`text-end fw-bold ${pending > 0 ? 'text-warning' : 'text-muted'}`}>
+                                                            {pending > 0 ? pending : 0}
+                                                        </td>
                                                         <td className="text-end">₹{NumberFormat(prod.Item_Rate)}</td>
-                                                        <td className="text-end">₹{NumberFormat(prod.Taxable_Amount)}</td>
-                                                        <td className="text-end">{toNumber(prod.Tax_Rate)}%</td>
-                                                        <td className="text-end fa-11">
-                                                            {totalTax > 0 ? (
-                                                                row.IS_IGST === 1 ? (
-                                                                    <span>₹{NumberFormat(totalTax)} <span className="text-muted">(IGST)</span></span>
-                                                                ) : (
-                                                                    <div className="lh-sm">
-                                                                        <div>₹{NumberFormat(cgst)} <span className="text-muted">(CGST)</span></div>
-                                                                        <div>₹{NumberFormat(sgst)} <span className="text-muted">(SGST)</span></div>
-                                                                    </div>
-                                                                )
-                                                            ) : (
-                                                                '₹0.00'
-                                                            )}
-                                                        </td>
-                                                        <td className="text-end fw-bold text-primary">₹{NumberFormat(prod.Final_Amo)}</td>
                                                     </tr>
                                                 );
                                             })}
@@ -275,90 +201,81 @@ const ListPurchaseOrder = ({ loadingOn, loadingOff, AddRights, pageID }) => {
                         </div>
                     </div>
 
-                    {/* Right Panel: Invoice Totals & Staff */}
-                    <div className="col-lg-3 d-flex flex-column gap-3">
-                        {/* Totals Card */}
-                        <div className="card shadow-sm border-0">
-                            <div className="card-header bg-white border-bottom-0 pt-3 pb-0">
-                                <h6 className="fw-bold text-primary mb-0">Invoice Summary</h6>
+                    {/* Right Column: Invoices & Conversion Details */}
+                    <div className="col-lg-6">
+                        <div className="card shadow-sm border-0 h-100">
+                            <div className="card-header bg-white border-bottom-0 pt-3">
+                                <h6 className="fw-bold text-primary mb-0">Conversion Details</h6>
                             </div>
-                            <div className="card-body py-3 fa-13">
-                                <div className="d-flex justify-content-between mb-2 pb-1 border-bottom">
-                                    <span className="text-muted">Sub Total</span>
-                                    <span className="fw-semibold">₹{NumberFormat(row?.Total_Before_Tax)}</span>
-                                </div>
-                                {row?.IS_IGST === 1 ? (
-                                    <div className="d-flex justify-content-between mb-2 pb-1 border-bottom">
-                                        <span className="text-muted">IGST Total</span>
-                                        <span className="fw-semibold">₹{NumberFormat(row?.IGST_Total)}</span>
-                                    </div>
+                            <div className="card-body">
+                                {invoices.length === 0 ? (
+                                    <div className="text-muted fst-italic py-4 text-center">No invoices generated yet.</div>
                                 ) : (
-                                    <>
-                                        <div className="d-flex justify-content-between mb-2 pb-1 border-bottom">
-                                            <span className="text-muted">CGST Total</span>
-                                            <span className="fw-semibold">₹{NumberFormat(row?.CSGT_Total)}</span>
-                                        </div>
-                                        <div className="d-flex justify-content-between mb-2 pb-1 border-bottom">
-                                            <span className="text-muted">SGST Total</span>
-                                            <span className="fw-semibold">₹{NumberFormat(row?.SGST_Total)}</span>
-                                        </div>
-                                    </>
-                                )}
-                                <div className="d-flex justify-content-between mb-2 pb-1 border-bottom">
-                                    <span className="text-muted">Total Tax</span>
-                                    <span className="fw-semibold">₹{NumberFormat(row?.Total_Tax)}</span>
-                                </div>
-                                <div className="d-flex justify-content-between mb-2 pb-1 border-bottom">
-                                    <span className="text-muted">Round Off</span>
-                                    <span className="fw-semibold">₹{NumberFormat(row?.Round_off)}</span>
-                                </div>
-                                <div className="d-flex justify-content-between pt-1">
-                                    <span className="fw-bold text-primary">Invoice Value</span>
-                                    <span className="fw-bold text-primary fa-15">₹{NumberFormat(row?.Total_Invoice_value)}</span>
-                                </div>
-                            </div>
-                        </div>
+                                    <div className="d-flex flex-column gap-3" style={{ maxHeight: '400px', overflowY: 'auto', paddingRight: '4px' }}>
+                                        {invoices.map((inv, index) => (
+                                            <div key={index} className="card border shadow-none bg-white">
+                                                <div className="card-header bg-light border-0 d-flex justify-content-between align-items-center py-2">
+                                                    <div>
+                                                        <span className="fw-bold text-dark me-2 fa-13">{inv.invNumber}</span>
+                                                        <span className="badge bg-success fa-11">{inv.deliveryStatusGet || 'Delivered'}</span>
+                                                    </div>
+                                                    <div className="fw-bold text-success fa-13">
+                                                        ₹{NumberFormat(inv.invValue)}
+                                                    </div>
+                                                </div>
+                                                <div className="card-body p-2 row g-2">
+                                                    {/* Invoice Products */}
+                                                    <div className="col-12 border-bottom pb-2">
+                                                        <h6 className="text-muted fa-11 text-uppercase mb-1 fw-bold">Invoice Products</h6>
+                                                        {toArray(inv.invoicedProduct).map((prod, i) => (
+                                                            <div key={i} className="d-flex justify-content-between fa-12 mb-1">
+                                                                <span className="text-truncate me-2" style={{ maxWidth: '220px' }} title={prod.productNameGet}>{prod.productNameGet}</span>
+                                                                <span className="fw-bold">{prod.quantity} x ₹{prod.itemRate}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
 
-                        {/* Staff Involved Card */}
-                        <div className="card shadow-sm border-0">
-                            <div className="card-header bg-white border-bottom-0 pt-3 pb-0">
-                                <h6 className="fw-bold text-primary mb-0">Staff Involved</h6>
-                            </div>
-                            <div className="card-body py-2">
-                                {staffInvolved.length === 0 ? (
-                                    <div className="text-muted fst-italic py-3 text-center fa-12">No staff assigned.</div>
-                                ) : (
-                                    <div className="table-responsive">
-                                        <table className="table table-sm table-hover align-middle mb-0 fa-12">
-                                            <thead className="table-light">
-                                                <tr>
-                                                    <th>Name</th>
-                                                    <th>Type</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {staffInvolved.map((staff, i) => (
-                                                    <tr key={i}>
-                                                        <td>{staff.EmpName || 'N/A'}</td>
-                                                        <td>{staff.EmpType || 'N/A'}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                                    {/* Trip Details & Receipt Details Side-by-Side */}
+                                                    <div className="col-6 border-end pt-1">
+                                                        <h6 className="text-muted fa-11 text-uppercase mb-1 fw-bold">Trip Sheet</h6>
+                                                        {toArray(inv.tripDetails).length === 0 ? (
+                                                            <span className="fa-12 text-muted">No Trip Assigned</span>
+                                                        ) : toArray(inv.tripDetails).map((trip, i) => (
+                                                            <div key={i} className="fa-12">
+                                                                <div className="fw-bold">Trip #{trip.tripNumber}</div>
+                                                                <div className="text-muted">{LocalDate(trip.tripDate)}</div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+
+                                                    <div className="col-6 pt-1">
+                                                        <h6 className="text-muted fa-11 text-uppercase mb-1 fw-bold">Payments</h6>
+                                                        {toArray(inv.receiptInfo).length === 0 ? (
+                                                            <span className="fa-12 text-muted">Unpaid</span>
+                                                        ) : toArray(inv.receiptInfo).map((rec, i) => (
+                                                            <div key={i} className="fa-12 d-flex justify-content-between">
+                                                                <span className="text-truncate me-1">#{rec.receiptNumber}</span>
+                                                                <span className="fw-bold text-success">₹{NumberFormat(rec.receiptAmount)}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    
+                                                    <div className="col-12 pt-1 border-top mt-2">
+                                                        <h6 className="text-muted fa-11 text-uppercase mb-1 fw-bold">Debit Notes</h6>
+                                                        {toArray(inv.creditNoteInfo).length === 0 ? (
+                                                            <span className="fa-12 text-muted">None</span>
+                                                        ) : toArray(inv.creditNoteInfo).map((cn, i) => (
+                                                            <div key={i} className="fa-12 d-flex justify-content-between">
+                                                                <span className="text-truncate me-1">#{cn.creditNoteNumber}</span>
+                                                                <span className="fw-bold text-danger">₹{NumberFormat(cn.TotalValue)}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
-                            </div>
-                        </div>
-
-                        {/* Narration Card */}
-                        <div className="card shadow-sm border-0">
-                            <div className="card-header bg-white border-bottom-0 pt-3 pb-0">
-                                <h6 className="fw-bold text-primary mb-0">Narration / Remarks</h6>
-                            </div>
-                            <div className="card-body py-2 fa-12">
-                                <p className="mb-0 text-muted fst-italic">
-                                    {row?.Narration || 'No narration provided.'}
-                                </p>
                             </div>
                         </div>
                     </div>
@@ -371,11 +288,68 @@ const ListPurchaseOrder = ({ loadingOn, loadingOff, AddRights, pageID }) => {
         setDialog({ ...dialog, filters: false });
     };
 
+    const filteredPurchaseOrders = useMemo(() => {
+        return purchaseOrders.filter(row => {
+            let isValid = true;
+
+            if (filters.OrderStatus?.value) {
+                const statusStr = row?.statusGet || '';
+                if (statusStr !== filters.OrderStatus.value) isValid = false;
+            }
+
+            if (isValid && filters.ConvertStatus?.value) {
+                const products = toArray(row?.Products_List);
+                const totalBillQty = products.reduce((acc, item) => Addition(acc, item.Bill_Qty), 0);
+                const totalConvertedQty = products.reduce((acc, item) => Addition(acc, item.convertedQuantity), 0);
+
+                let status = "Pending";
+                if (totalConvertedQty > 0) {
+                    if (totalConvertedQty >= totalBillQty) {
+                        status = "Converted";
+                    } else {
+                        status = "Partially";
+                    }
+                }
+                if (status !== filters.ConvertStatus.value) isValid = false;
+            }
+
+            if (isValid && filters.TripStatus?.value) {
+                const convertedInvoice = toArray(row?.ConvertedInvoice);
+                const isAssigned = convertedInvoice.some(
+                    inv => toArray(inv?.tripDetails).length > 0
+                ) || toArray(row?.tripDetails).length > 0;
+                let status = isAssigned ? 'Assigned' : 'Pending';
+                if (status !== filters.TripStatus.value) isValid = false;
+            }
+
+            if (isValid && filters.PaidStatus?.value) {
+                const convertedInvoice = toArray(row?.ConvertedInvoice);
+                const paidAmount = convertedInvoice.reduce((sum, inv) => {
+                    const receipts = toArray(inv?.receiptInfo);
+                    const invPaid = receipts.reduce((invSum, r) => Addition(invSum, r?.receiptAmount), 0);
+                    return Addition(sum, invPaid);
+                }, 0);
+                
+                let status = "Unpaid";
+                if (paidAmount > 0) {
+                    if (paidAmount >= Number(row?.Total_Invoice_value)) {
+                        status = "Fully Paid";
+                    } else {
+                        status = "Partially Paid";
+                    }
+                }
+                if (status !== filters.PaidStatus.value) isValid = false;
+            }
+
+            return isValid;
+        });
+    }, [purchaseOrders, filters.OrderStatus, filters.ConvertStatus, filters.TripStatus, filters.PaidStatus]);
+
     return (
         <>
             <AppTableComponent
                 title="Purchase Orders"
-                dataArray={purchaseOrders}
+                dataArray={filteredPurchaseOrders}
                 EnableSerialNumber
                 columns={[
                     createCol("Po_Date", "date", "Date"),
@@ -384,7 +358,8 @@ const ListPurchaseOrder = ({ loadingOn, loadingOff, AddRights, pageID }) => {
                     createCol("VoucherTypeGet", "string", "Voucher"),
                     createCol("Total_Invoice_value", "number", "Invoice Value"),
                     {
-                        ColumnHeader: "Status",
+                        ColumnHeader: "Order Status",
+                        Field_Name: 'OrderStatus',
                         isVisible: 1,
                         align: "center",
                         isCustomCell: true,
@@ -399,6 +374,74 @@ const ListPurchaseOrder = ({ loadingOn, loadingOff, AddRights, pageID }) => {
                             return (
                                 <span className={`py-0 fw-bold px-2 rounded-4 fa-12 ${className}`}>
                                     {row.statusGet}
+                                </span>
+                            );
+                        },
+                    },
+                    {
+                        ColumnHeader: "Convert Status",
+                        Field_Name: 'invoiceStatus',
+                        isVisible: 1,
+                        align: "center",
+                        isCustomCell: true,
+                        Cell: ({ row }) => {
+                            const products = toArray(row?.Products_List);
+                            const totalBillQty = products.reduce((acc, item) => Addition(acc, item.Bill_Qty), 0);
+                            const totalConvertedQty = products.reduce((acc, item) => Addition(acc, item.convertedQuantity), 0);
+
+                            let status = "Pending";
+                            let className = "bg-primary text-white";
+
+                            if (totalConvertedQty > 0) {
+                                if (totalConvertedQty >= totalBillQty) {
+                                    status = "Converted";
+                                    className = "bg-success text-white";
+                                } else {
+                                    status = "Partially";
+                                    className = "bg-warning text-dark";
+                                }
+                            }
+
+                            return (
+                                <span className={`py-0 fw-bold px-2 rounded-4 fa-12 ${className}`}>
+                                    {status}
+                                </span>
+                            );
+                        },
+                    },
+                    {
+                        ColumnHeader: "Trip Status",
+                        Field_Name: 'tripStatus',
+                        isVisible: 1,
+                        align: "center",
+                        isCustomCell: true,
+                        Cell: ({ row }) => {
+                            const convertedInvoice = toArray(row?.ConvertedInvoice);
+                            const isAssigned = convertedInvoice.some(
+                                inv => toArray(inv?.tripDetails).length > 0
+                            ) || toArray(row?.tripDetails).length > 0;
+                            return (
+                                <span className={`py-0 fw-bold px-2 rounded-4 fa-12 ${isAssigned ? 'bg-success text-white' : 'bg-secondary text-white'}`}>
+                                    {isAssigned ? 'Assigned' : 'Pending'}
+                                </span>
+                            );
+                        },
+                    },
+                    {
+                        ColumnHeader: "Paid Amount",
+                        isVisible: 1,
+                        align: "center",
+                        isCustomCell: true,
+                        Cell: ({ row }) => {
+                            const convertedInvoice = toArray(row?.ConvertedInvoice);
+                            const paidAmount = convertedInvoice.reduce((sum, inv) => {
+                                const receipts = toArray(inv?.receiptInfo);
+                                const invPaid = receipts.reduce((invSum, r) => Addition(invSum, r?.receiptAmount), 0);
+                                return Addition(sum, invPaid);
+                            }, 0);
+                            return (
+                                <span className="fw-bold text-success">
+                                    ₹{paidAmount}
                                 </span>
                             );
                         },
@@ -609,6 +652,89 @@ const ListPurchaseOrder = ({ loadingOn, loadingOff, AddRights, pageID }) => {
                                         />
                                     </td>
                                 </tr>
+                                <tr>
+                                    <td style={{ verticalAlign: "middle" }}>Order Status</td>
+                                    <td>
+                                        <Select
+                                            value={filters?.OrderStatus}
+                                            onChange={(e) => setFilters({ ...filters, OrderStatus: e })}
+                                            options={[
+                                                { value: "", label: "ALL" },
+                                                { value: "New", label: "New" },
+                                                { value: "Processing", label: "Processing" },
+                                                { value: "Completed", label: "Completed" },
+                                                { value: "Cancelled", label: "Cancelled" },
+                                            ]}
+                                            styles={customSelectStyles}
+                                            isSearchable={false}
+                                            placeholder={"Order Status"}
+                                            filterOption={reactSelectFilterLogic}
+                                            menuPortalTarget={document.body}
+                                        />
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style={{ verticalAlign: "middle" }}>Convert Status</td>
+                                    <td>
+                                        <Select
+                                            value={filters?.ConvertStatus}
+                                            onChange={(e) => setFilters({ ...filters, ConvertStatus: e })}
+                                            options={[
+                                                { value: "", label: "ALL" },
+                                                { value: "Pending", label: "Pending" },
+                                                { value: "Partially", label: "Partially" },
+                                                { value: "Converted", label: "Converted" },
+                                            ]}
+                                            styles={customSelectStyles}
+                                            isSearchable={false}
+                                            placeholder={"Convert Status"}
+                                            filterOption={reactSelectFilterLogic}
+                                            menuPortalTarget={document.body}
+                                        />
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style={{ verticalAlign: "middle" }}>Trip Status</td>
+                                    <td>
+                                        <Select
+                                            value={filters?.TripStatus}
+                                            onChange={(e) => setFilters({ ...filters, TripStatus: e })}
+                                            options={[
+                                                { value: "", label: "ALL" },
+                                                { value: "Assigned", label: "Assigned" },
+                                                { value: "Pending", label: "Pending" },
+                                            ]}
+                                            styles={customSelectStyles}
+                                            isSearchable={false}
+                                            placeholder={"Trip Status"}
+                                            filterOption={reactSelectFilterLogic}
+                                            menuPortalTarget={document.body}
+                                        />
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style={{ verticalAlign: "middle" }}>Paid Amount</td>
+                                    <td>
+                                        <Select
+                                            value={filters?.PaidStatus}
+                                            onChange={(e) => setFilters({ ...filters, PaidStatus: e })}
+                                            options={[
+                                                { value: "", label: "ALL" },
+                                                { value: "Fully Paid", label: "Fully Paid" },
+                                                { value: "Partially Paid", label: "Partially Paid" },
+                                                { value: "Unpaid", label: "Unpaid" },
+                                            ]}
+                                            styles={customSelectStyles}
+                                            isSearchable={false}
+                                            placeholder={"Paid Amount Status"}
+                                            filterOption={reactSelectFilterLogic}
+                                            menuPortalTarget={document.body}
+                                        />
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -625,6 +751,11 @@ const ListPurchaseOrder = ({ loadingOn, loadingOff, AddRights, pageID }) => {
                                 Retailer: filters.Retailer,
                                 CreatedBy: filters.CreatedBy,
                                 VoucherType: filters.VoucherType,
+                                Cancel_status: filters.Cancel_status,
+                                OrderStatus: filters.OrderStatus,
+                                ConvertStatus: filters.ConvertStatus,
+                                TripStatus: filters.TripStatus,
+                                PaidStatus: filters.PaidStatus,
                             });
                             setFilterVersion(v => v + 1);
                         }}

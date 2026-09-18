@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react';
+import { Fragment, useState, useRef, useEffect } from 'react';
 import {
     Table, TableBody, TableContainer, TableRow, Paper, TablePagination, TableHead, TableCell,
     TableSortLabel, IconButton, Popover, MenuList, MenuItem, ListItemIcon, ListItemText,
@@ -225,7 +225,7 @@ const FilterableTable = ({
     onClickFun = null,
     isExpendable = false,
     expandableComp = null,
-    tableMaxHeight = 550,
+    tableMaxHeight = null,
     initialPageCount = 20,
     EnableSerialNumber = false,
     CellSize = 'small' || 'medium',
@@ -237,14 +237,59 @@ const FilterableTable = ({
     ButtonArea = null,
     MenuButtons = [],
     bodyFontSizePx = 13,
-    headerFontSizePx = 13
+    headerFontSizePx = 13,
+    dynamicHeight = true
 }) => {
 
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(initialPageCount);
     const [sortCriteria, setSortCriteria] = useState([]);
     const [showFullHeight, setShowFullHeight] = useState(true);
-    const tableHeight = (showFullHeight && maxHeightOption) ? ' max-content ' : tableMaxHeight;
+
+    const tableContainerRef = useRef(null);
+    const [dynamicMaxHeight, setDynamicMaxHeight] = useState(null);
+
+    useEffect(() => {
+        if (!dynamicHeight) return;
+
+        const updateTableHeight = () => {
+            if (!tableContainerRef.current) return;
+            const rect = tableContainerRef.current.getBoundingClientRect();
+            const topOffset = rect.top > 0 ? rect.top : 140;
+            const bottomReservedSpace = disablePagination ? 24 : 76;
+            const availableHeight = window.innerHeight - topOffset - bottomReservedSpace;
+            const calculatedHeight = Math.max(220, Math.floor(availableHeight));
+            setDynamicMaxHeight(calculatedHeight);
+        };
+
+        updateTableHeight();
+
+        window.addEventListener('resize', updateTableHeight);
+
+        let resizeObserver;
+        if (typeof ResizeObserver !== 'undefined' && tableContainerRef.current) {
+            resizeObserver = new ResizeObserver(() => {
+                updateTableHeight();
+            });
+            if (tableContainerRef.current.parentElement) {
+                resizeObserver.observe(tableContainerRef.current.parentElement);
+            }
+        }
+
+        const timer = setTimeout(updateTableHeight, 150);
+
+        return () => {
+            window.removeEventListener('resize', updateTableHeight);
+            if (resizeObserver) resizeObserver.disconnect();
+            clearTimeout(timer);
+        };
+    }, [dynamicHeight, disablePagination, dataArray?.length]);
+
+    const useDynamic = dynamicHeight && (!tableMaxHeight || tableMaxHeight === 550);
+    const resolvedHeight = useDynamic
+        ? (dynamicMaxHeight ? `${dynamicMaxHeight}px` : 'calc(100vh - 220px)')
+        : (typeof tableMaxHeight === 'number' ? `${tableMaxHeight}px` : (tableMaxHeight || 'calc(100vh - 220px)'));
+    const tableHeight = (showFullHeight && maxHeightOption) ? 'max-content' : resolvedHeight;
 
     const columnAlign = [
         {
@@ -454,7 +499,7 @@ const FilterableTable = ({
                 {title && <h6 className='fw-bold text-muted flex-grow-1 m-0'>{title}</h6>}
             </div>
 
-            <TableContainer sx={{ maxHeight: tableHeight }}>
+            <TableContainer ref={tableContainerRef} sx={{ maxHeight: tableHeight }}>
 
                 <Table stickyHeader size={CellSize}>
 
@@ -599,7 +644,8 @@ FilterableTable.propTypes = {
     ExcelPrintOption: PropTypes.bool,
     maxHeightOption: PropTypes.bool,
     ButtonArea: PropTypes.element,
-    MenuButtons: PropTypes.arrayOf(PropTypes.object)
+    MenuButtons: PropTypes.arrayOf(PropTypes.object),
+    dynamicHeight: PropTypes.bool
 };
 
 FilterableTable.defaultProps = {
@@ -608,7 +654,7 @@ FilterableTable.defaultProps = {
     onClickFun: null,
     isExpendable: false,
     expandableComp: null,
-    tableMaxHeight: 550,
+    tableMaxHeight: null,
     initialPageCount: 20,
     EnableSerialNumber: false,
     CellSize: 'small',
@@ -621,6 +667,7 @@ FilterableTable.defaultProps = {
     MenuButtons: [],
     headerFontSizePx: 13,
     bodyFontSizePx: 13,
+    dynamicHeight: true
 };
 
 export default FilterableTable;
