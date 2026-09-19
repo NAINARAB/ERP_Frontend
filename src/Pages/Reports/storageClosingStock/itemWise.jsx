@@ -656,10 +656,6 @@ const ItemWiseStockReport = ({
             </TableSortLabel>
         );
 
-        if (header && typeof header === "object") {
-            header.toString = () => displayLabel;
-        }
-
         if (col.isCustomCell && col.Cell) {
             // Already custom (e.g. qty columns from withQtyDisplay) — keep its Cell, swap only the header.
             return { ...col, ColumnHeader: header };

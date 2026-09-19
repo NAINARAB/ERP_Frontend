@@ -1147,6 +1147,8 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading, PrintRights }) =
                                     godownData={baseData.godown}
                                     commonGodown={commonGodown}
                                     setCommonGodown={setCommonGodown}
+                                    loadingOff={loadingOff}
+                                    loadingOn={loadingOn}
                                 />
                             </div>
                         </div>

@@ -15,6 +15,7 @@ const AccountTransaction = ({ loadingOn, loadingOff }) => {
     const [filters, setFilters] = useState({
         Fromdate: ISOString(),
         Todate: ISOString(),
+        status: { value: 'ALL', label: 'All Bills' },
         account: { value: '', label: 'Select Account' },
         refreshCount: 0,
         filterDailog: false
@@ -39,8 +40,17 @@ const AccountTransaction = ({ loadingOn, loadingOff }) => {
 
     }, [filters.refreshCount]);
 
-    const debitTotal = useMemo(() => reportData.reduce((acc, obj) => Addition(acc, obj.Debit_Amt), 0), [reportData])
-    const creditTotal = useMemo(() => reportData.reduce((acc, obj) => Addition(acc, obj.Credit_Amt), 0), [reportData])
+    const filteredReportData = useMemo(() => {
+        if (!reportData || !reportData.length) return [];
+        const status = filters.status?.value || 'ALL';
+        if (status === 'ALL') return reportData;
+        if (status === 'COMPLETED') return reportData.filter(row => row.isCompleted);
+        if (status === 'PENDING') return reportData.filter(row => !row.isCompleted);
+        return reportData;
+    }, [reportData, filters.status]);
+
+    const debitTotal = useMemo(() => filteredReportData.reduce((acc, obj) => Addition(acc, obj.Debit_Amt), 0), [filteredReportData])
+    const creditTotal = useMemo(() => filteredReportData.reduce((acc, obj) => Addition(acc, obj.Credit_Amt), 0), [filteredReportData])
 
     const difference = useMemo(() => {
         if (debitTotal > creditTotal) return { amount: Subraction(debitTotal, creditTotal), side: 'Dr' }
@@ -91,7 +101,9 @@ const AccountTransaction = ({ loadingOn, loadingOff }) => {
                         ><FilterAlt /></IconButton>
                     </>
                 }
-                dataArray={reportData}
+                dataArray={filteredReportData}
+                isExpendable={true}
+                expandableComp={({ row }) => <ReferencesExpandedComp row={row} />}
                 columns={[
                     createCol('invoice_no', 'string', 'Voucher-Number'),
                     createCol('Ledger_Date', 'date', 'Date'),
@@ -151,6 +163,24 @@ const AccountTransaction = ({ loadingOn, loadingOff }) => {
                             </tr>
 
                             <tr>
+                                <td style={{ verticalAlign: "middle" }}>Status</td>
+                                <td>
+                                    <Select
+                                        placeholder="Select status"
+                                        value={filters.status}
+                                        options={[
+                                            { value: 'ALL', label: 'All Bills' },
+                                            { value: 'COMPLETED', label: 'Completed Bills' },
+                                            { value: 'PENDING', label: 'Pending Bills' },
+                                        ]}
+                                        onChange={(e) => setFilters({ ...filters, status: e })}
+                                        isSearchable={false}
+                                        styles={customSelectStyles}
+                                        menuPortalTarget={document.body}
+                                    />
+                                </td>
+                            </tr>
+                            <tr>
                                 <td style={{ verticalAlign: "middle" }}>Debit Account</td>
                                 <td>
                                     <Select
@@ -172,5 +202,43 @@ const AccountTransaction = ({ loadingOn, loadingOff }) => {
         </>
     )
 }
+
+const ReferencesExpandedComp = ({ row }) => {
+    if (!row?.references || row.references.length === 0) {
+        return <div className="p-3 text-muted">No against references found.</div>;
+    }
+
+    return (
+        <div className="">
+            <h6 className="mb-2">Against References</h6>
+            <table className="table table-sm table-bordered bg-white">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Voucher No</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {row.references.map((ref, idx) => (
+                        <tr key={idx}>
+                            <td>{new Date(ref.eventDate).toLocaleDateString()}</td>
+                            <td>{ref.type}</td>
+                            <td>{ref.sourceVoucher}</td>
+                            <td className="text-end">{NumberFormat(ref.amount)}</td>
+                        </tr>
+                    ))}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colSpan={3} className="text-end fw-bold">Balance Amount</td>
+                        <td className="text-end fw-bold text-danger">{NumberFormat(row.BalanceAmount)}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    );
+};
 
 export default AccountTransaction;

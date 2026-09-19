@@ -132,6 +132,12 @@ const PurchaseInvoiceManagement = ({ loadingOn, loadingOff, PrintRights }) => {
     }, [selectedItems, baseData.products, IS_IGST, isNotTaxableBill, isInclusive, invExpencesTotal]);
 
     useEffect(() => {
+        if (taxSplitUp?.roundOff !== undefined && taxSplitUp?.roundOff !== invoiceDetails.Round_off) {
+            setInvoiceDetails(pre => ({ ...pre, Round_off: taxSplitUp.roundOff }));
+        }
+    }, [taxSplitUp?.roundOff]);
+
+    useEffect(() => {
 
         const fetchData = async () => {
             try {

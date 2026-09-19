@@ -8,8 +8,11 @@ import AppTabs from "../../../Components/appTabsComponent";
 import LedgerBasedClosingStock from "../../Reports/CRM/ledgerWise";
 import AppDialog from "../../../Components/appDialogComponent";
 import { IconButton, Tooltip } from "@mui/material";
-import { InfoOutlined, ReceiptLong } from "@mui/icons-material";
+import { InfoOutlined, ReceiptLong, AccountBalanceWallet, Inventory2 } from "@mui/icons-material";
 import { transactionTypes } from "../../Receipts/ReceiptMaster/variable";
+import { ButtonActions } from "../../../Components/filterableTable2";
+import AccountTransaction from "../../Journal/JournalReport/accountTransaction";
+import StockInHand from "../../Reports/storageClosingStock/stockInHand";
 
 const ManageSalesInvoiceGeneralInfo = ({
     invoiceInfo = {},
@@ -40,6 +43,8 @@ const ManageSalesInvoiceGeneralInfo = ({
     const inputStyle = 'cus-inpt p-2';
 
     const [open, setOpen] = useState(false);
+    const [accountTransactionOpen, setAccountTransactionOpen] = useState(false);
+    const [stockInHandOpen, setStockInHandOpen] = useState(false);
     const [enableBillingAutocomplete, setEnableBillingAutocomplete] = useState(true);
     const [enableShippingAutocomplete, setEnableShippingAutocomplete] = useState(true);
 
@@ -141,7 +146,33 @@ const ManageSalesInvoiceGeneralInfo = ({
                                                         isDisabled={isValidNumber(invoiceInfo?.So_No) && salesInvoiceAccess?.saleOrderRestriction?.exists}
                                                     />
                                                 </div>
-                                                <Tooltip title='Closing Stock'>
+                                                <ButtonActions
+                                                    buttonsData={[
+                                                        {
+                                                            icon: <InfoOutlined />,
+                                                            name: 'Closing Stock',
+                                                            onclick: () => setOpen(true),
+                                                            disabled: !isValidNumber(invoiceInfo?.Retailer_Id)
+                                                        },
+                                                        {
+                                                            icon: <ReceiptLong />,
+                                                            name: 'Recent Invoice',
+                                                            onclick: () => onPreviewOpen && onPreviewOpen(),
+                                                            disabled: !isValidNumber(invoiceInfo?.Retailer_Id)
+                                                        },
+                                                        {
+                                                            icon: <AccountBalanceWallet />,
+                                                            name: 'Account Transaction',
+                                                            onclick: () => setAccountTransactionOpen(true)
+                                                        },
+                                                        {
+                                                            icon: <Inventory2 />,
+                                                            name: 'Stock In Hand',
+                                                            onclick: () => setStockInHandOpen(true)
+                                                        }
+                                                    ]}
+                                                />
+                                                {/* <Tooltip title='Closing Stock'>
                                                     <span>
                                                         <IconButton
                                                             onClick={() => setOpen(true)}
@@ -156,7 +187,7 @@ const ManageSalesInvoiceGeneralInfo = ({
                                                             disabled={!isValidNumber(invoiceInfo?.Retailer_Id)}
                                                         ><ReceiptLong /></IconButton>
                                                     </span>
-                                                </Tooltip>
+                                                </Tooltip> */}
                                             </div>
                                         </div>
 
@@ -857,12 +888,37 @@ const ManageSalesInvoiceGeneralInfo = ({
 
             <AppDialog
                 open={open}
+                onClose={() => setOpen(false)}
                 handleClose={() => setOpen(false)}
                 title={`Closing Stock - ${invoiceInfo?.Retailer_Name ?? ''}`}
                 maxWidth='xl'
             >
                 <LedgerBasedClosingStock
                     StockItemLedgerName={invoiceInfo.Stock_Item_Ledger_Name}
+                />
+            </AppDialog>
+
+            <AppDialog
+                open={accountTransactionOpen}
+                onClose={() => setAccountTransactionOpen(false)}
+                title="Account Transaction"
+                fullScreen
+            >
+                <AccountTransaction
+                    loadingOn={loadingOn}
+                    loadingOff={loadingOff}
+                />
+            </AppDialog>
+
+            <AppDialog
+                open={stockInHandOpen}
+                onClose={() => setStockInHandOpen(false)}
+                title="Stock In Hand"
+                fullScreen
+            >
+                <StockInHand
+                    loadingOn={loadingOn}
+                    loadingOff={loadingOff}
                 />
             </AppDialog>
         </>

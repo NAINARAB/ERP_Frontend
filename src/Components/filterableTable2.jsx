@@ -73,9 +73,11 @@ const preprocessDataForExport = (data, columns) => {
                 if (column.isCustomCell && column.Cell) {
                     const cellContent = column.Cell({ row });
 
-                    const safeColumnHeader = column.ColumnHeader
-                        ? String(column.ColumnHeader).replace(/\s+/g, '_').toLowerCase()
-                        : `field_${index + 1}`;
+                    const headerText = typeof column.ColumnHeader === 'string' && column.ColumnHeader
+                        ? column.ColumnHeader
+                        : (column.Field_Name || `field_${index + 1}`);
+
+                    const safeColumnHeader = String(headerText).replace(/\s+/g, '_').toLowerCase();
 
                     if (typeof cellContent === 'string' || typeof cellContent === 'number' || typeof cellContent === 'bigint') {
                         flattenedRow[safeColumnHeader] = cellContent;
@@ -104,7 +106,10 @@ const generatePDF = (dataArray, columns) => {
 
         const headers = columns
             .filter((column) => column.isVisible || column.Defult_Display)
-            .map((column) => column.Field_Name || String(column.ColumnHeader).replace(/\s+/g, '_').toLowerCase());
+            .map((column) => {
+                const headerText = column.Field_Name || (typeof column.ColumnHeader === 'string' ? column.ColumnHeader : '');
+                return String(headerText).replace(/\s+/g, '_').toLowerCase();
+            });
 
         const rows = processedData.map((row) =>
             headers.map((header) => row[header])
