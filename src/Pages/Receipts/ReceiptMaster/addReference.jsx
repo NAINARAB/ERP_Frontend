@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 
 import { Addition, checkIsNumber, isEqualNumber, ISOString, isValidObject, Subraction, toArray, toNumber } from "../../../Components/functions";
 import { fetchLink } from "../../../Components/fetchComponent";
-import { receiptValueInitialValue, receiptGeneralInfoInitialValue } from "./variable";
+import { receiptGeneralInfoInitialValue } from "./variable";
 
 import SalesInvoiceReceipt from "./salesReceipt";
 import ChooseReceiptComponent from "./chooseReceipt";
