@@ -10,7 +10,7 @@ import { toast } from 'react-toastify';
 import { useLocation, useNavigate } from "react-router-dom";
 import { transactionTypes } from "../../Receipts/ReceiptMaster/variable";
 import InvolvedStaffs from "./staffInvolved";
-
+import PaymentReferences from "./paymentReferences";
 
 const initialSelectValue = { value: '', label: '' };
 
@@ -653,6 +653,21 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                                 />
                             </div>
 
+                        </div>
+
+                        <div className="row p-0 mt-2">
+                            <div className="col-12 p-2 px-xxl-2 px-lg-2 px-md-3">
+                                <div className="border" style={{ minHeight: '10vh', height: '100%' }}>
+                                    <PaymentReferences
+                                        paymentValue={paymentValue}
+                                        setPaymentValue={setPaymentValue}
+                                        paymentBillDetails={paymentBillDetails}
+                                        setPaymentBillDetails={setPaymentBillDetails}
+                                        loadingOn={loadingOn}
+                                        loadingOff={loadingOff}
+                                    />
+                                </div>
+                            </div>
                         </div>
 
                     </CardContent>

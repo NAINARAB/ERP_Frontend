@@ -3,13 +3,14 @@ import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
 import { Box, IconButton, Tab, Autocomplete, TextField, Chip } from "@mui/material";
 import { useState, useEffect } from "react";
-import { ISOString } from '../../../Components/functions';
+import { isEqualNumber, ISOString } from '../../../Components/functions';
 import { Search } from '@mui/icons-material';
 import ItemWiseStockReport from './itemWise';
+import StockAbstract from './stockAbstract';
 import { storageStockColumnsForItemWise, storageStockColumnsForGodownWise } from './variable';
 import { fetchLink } from "../../../Components/fetchComponent";
 import {
-     toArray
+    toArray
 } from "../../../Components/functions";
 
 
@@ -136,6 +137,17 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
                 />
             )
         },
+        {
+            name: 'Stock abstract',
+            component: (
+                <StockAbstract
+                    loadingOn={loadingOn}
+                    loadingOff={loadingOff}
+                    Fromdate={dateFilter.Fromdate}
+                    Todate={dateFilter.Todate}
+                />
+            )
+        },
     ];
 
     return (
@@ -166,118 +178,121 @@ const CustomerClosingStockReport = ({ loadingOn, loadingOff }) => {
                     }))}
                 ><Search /></IconButton>
 
+                {!isEqualNumber(tabValue, 3) && (
+                    <>
+                        <label htmlFor="stock-item-name" className='me-1 fw-bold '>Stock Item Name: </label>
+                        <Autocomplete
+                            id='stock-item-name'
+                            options={filterOptions.stockItemNames}
+                            value={commonFilters.stockItemName || ''}
+                            onChange={(event, newValue) => {
+                                updateCommonFilter('stockItemName', newValue || '');
+                            }}
+                            onInputChange={(event, newInputValue) => {
 
-                <label htmlFor="stock-item-name" className='me-1 fw-bold '>Stock Item Name: </label>
-                <Autocomplete
-                    id='stock-item-name'
-                    options={filterOptions.stockItemNames}
-                    value={commonFilters.stockItemName || ''}
-                    onChange={(event, newValue) => {
-                        updateCommonFilter('stockItemName', newValue || '');
-                    }}
-                    onInputChange={(event, newInputValue) => {
+                                if (event && event.type === 'change') {
 
-                        if (event && event.type === 'change') {
-
-                        }
-                    }}
-                    freeSolo
-                    selectOnFocus
-                    clearOnBlur
-                    handleHomeEndKeys
-                    sx={{
-                        width: getAutocompleteWidth(commonFilters.stockItemName),
-                        transition: 'width 0.15s ease',
-                    }}
-                    renderInput={(params) => (
-                        <TextField
-                            {...params}
-                            placeholder="Search stock item"
-                            size="small"
+                                }
+                            }}
+                            freeSolo
+                            selectOnFocus
+                            clearOnBlur
+                            handleHomeEndKeys
+                            sx={{
+                                width: getAutocompleteWidth(commonFilters.stockItemName),
+                                transition: 'width 0.15s ease',
+                            }}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    placeholder="Search stock item"
+                                    size="small"
+                                />
+                            )}
+                            filterOptions={normalizedFilterOptions}
+                            renderOption={(props, option) => (
+                                <li {...props}>
+                                    {option}
+                                </li>
+                            )}
+                            isOptionEqualToValue={(option, value) => option === value}
+                            ListboxProps={{
+                                style: { maxHeight: 200 }
+                            }}
                         />
-                    )}
-                    filterOptions={normalizedFilterOptions}
-                    renderOption={(props, option) => (
-                        <li {...props}>
-                            {option}
-                        </li>
-                    )}
-                    isOptionEqualToValue={(option, value) => option === value}
-                    ListboxProps={{
-                        style: { maxHeight: 200 }
-                    }}
-                />
 
 
-                <label htmlFor="grade-item-group" className='me-1 fw-bold '>Grade Item Group: </label>
-                <Autocomplete
-                    id='grade-item-group'
-                    options={filterOptions.gradeItemGroups}
-                    value={commonFilters.gradeItemGroup || ''}
-                    onChange={(event, newValue) => {
-                        updateCommonFilter('gradeItemGroup', newValue || '');
-                    }}
-                    freeSolo
-                    selectOnFocus
-                    clearOnBlur
-                    handleHomeEndKeys
-                    sx={{
-                        width: getAutocompleteWidth(commonFilters.gradeItemGroup),
-                        transition: 'width 0.15s ease',
-                    }}
-                    renderInput={(params) => (
-                        <TextField
-                            {...params}
-                            placeholder="Search grade group"
-                            size="small"
+                        <label htmlFor="grade-item-group" className='me-1 fw-bold '>Grade Item Group: </label>
+                        <Autocomplete
+                            id='grade-item-group'
+                            options={filterOptions.gradeItemGroups}
+                            value={commonFilters.gradeItemGroup || ''}
+                            onChange={(event, newValue) => {
+                                updateCommonFilter('gradeItemGroup', newValue || '');
+                            }}
+                            freeSolo
+                            selectOnFocus
+                            clearOnBlur
+                            handleHomeEndKeys
+                            sx={{
+                                width: getAutocompleteWidth(commonFilters.gradeItemGroup),
+                                transition: 'width 0.15s ease',
+                            }}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    placeholder="Search grade group"
+                                    size="small"
+                                />
+                            )}
+                            filterOptions={normalizedFilterOptions}
+                            renderOption={(props, option) => (
+                                <li {...props}>
+                                    {option}
+                                </li>
+                            )}
+                            isOptionEqualToValue={(option, value) => option === value}
+                            ListboxProps={{
+                                style: { maxHeight: 200 }
+                            }}
                         />
-                    )}
-                    filterOptions={normalizedFilterOptions}
-                    renderOption={(props, option) => (
-                        <li {...props}>
-                            {option}
-                        </li>
-                    )}
-                    isOptionEqualToValue={(option, value) => option === value}
-                    ListboxProps={{
-                        style: { maxHeight: 200 }
-                    }}
-                />
 
-                <label htmlFor="item-name-modified" className='me-1 fw-bold '>Item Name Modified: </label>
-                <Autocomplete
-                    id='item-name-modified'
-                    options={filterOptions.itemNameModifieds}
-                    value={commonFilters.itemNameModified || ''}
-                    onChange={(event, newValue) => {
-                        updateCommonFilter('itemNameModified', newValue || '');
-                    }}
-                    freeSolo
-                    selectOnFocus
-                    clearOnBlur
-                    handleHomeEndKeys
-                    sx={{
-                        width: getAutocompleteWidth(commonFilters.itemNameModified),
-                        transition: 'width 0.15s ease',
-                    }}
-                    renderInput={(params) => (
-                        <TextField
-                            {...params}
-                            placeholder="Search item modified"
-                            size="small"
+                        <label htmlFor="item-name-modified" className='me-1 fw-bold '>Item Name Modified: </label>
+                        <Autocomplete
+                            id='item-name-modified'
+                            options={filterOptions.itemNameModifieds}
+                            value={commonFilters.itemNameModified || ''}
+                            onChange={(event, newValue) => {
+                                updateCommonFilter('itemNameModified', newValue || '');
+                            }}
+                            freeSolo
+                            selectOnFocus
+                            clearOnBlur
+                            handleHomeEndKeys
+                            sx={{
+                                width: getAutocompleteWidth(commonFilters.itemNameModified),
+                                transition: 'width 0.15s ease',
+                            }}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    placeholder="Search item modified"
+                                    size="small"
+                                />
+                            )}
+                            filterOptions={normalizedFilterOptions}
+                            renderOption={(props, option) => (
+                                <li {...props}>
+                                    {option}
+                                </li>
+                            )}
+                            isOptionEqualToValue={(option, value) => option === value}
+                            ListboxProps={{
+                                style: { maxHeight: 200 }
+                            }}
                         />
-                    )}
-                    filterOptions={normalizedFilterOptions}
-                    renderOption={(props, option) => (
-                        <li {...props}>
-                            {option}
-                        </li>
-                    )}
-                    isOptionEqualToValue={(option, value) => option === value}
-                    ListboxProps={{
-                        style: { maxHeight: 200 }
-                    }}
-                />
+                    </>
+                )}
             </div>
 
             <TabContext value={tabValue}>

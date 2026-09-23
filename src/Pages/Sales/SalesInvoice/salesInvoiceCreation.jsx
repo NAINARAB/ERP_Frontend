@@ -132,7 +132,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading, PrintRights }) =
                 ] = await Promise.all([
                     fetchLink({ address: `masters/branch/dropDown` }),
                     fetchLink({ address: `masters/products` }),
-                    fetchLink({ address: `masters/retailers/dropDown` }),
+                    fetchLink({ address: `masters/retailers/dropDownSearch` }),
                     fetchLink({ address: `masters/voucher?module=SALE_INVOICE` }),
                     fetchLink({ address: `masters/uom` }),
                     fetchLink({ address: `dataEntry/costCenter` }),
@@ -618,6 +618,30 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading, PrintRights }) =
         setInvoiceExpences([]);
         setStaffArray([]);
     }
+
+    const onSearchRetailer = async (searchStr) => {
+        try {
+            const res = await fetchLink({ address: `masters/retailers/dropDownSearch?searchStr=${searchStr}` });
+            if (res.success && res.data) {
+                setBaseData(prev => {
+                    const existingRetailers = [...prev.retailers];
+                    const newRetailers = toArray(res.data);
+                    
+                    const uniqueRetailersMap = new Map();
+                    existingRetailers.forEach(r => uniqueRetailersMap.set(r.Retailer_Id, r));
+                    newRetailers.forEach(r => uniqueRetailersMap.set(r.Retailer_Id, r));
+
+                    const uniqueRetailers = Array.from(uniqueRetailersMap.values())
+                        .sort((a, b) => String(a?.Retailer_Name).localeCompare(b?.Retailer_Name));
+                    
+                    return { ...prev, retailers: uniqueRetailers };
+                });
+            }
+        } catch (e) {
+            console.error("Error searching retailers:", e);
+        }
+    };
+
 
     const saveSalesInvoice = () => {
 
@@ -1149,6 +1173,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading, PrintRights }) =
                                     setCommonGodown={setCommonGodown}
                                     loadingOff={loadingOff}
                                     loadingOn={loadingOn}
+                                    onSearchRetailer={onSearchRetailer}
                                 />
                             </div>
                         </div>

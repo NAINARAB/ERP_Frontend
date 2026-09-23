@@ -37,7 +37,8 @@ const ManageSalesInvoiceGeneralInfo = ({
     onPreviewOpen,
     isPreview = false,
     commonGodown = commonGodownForProducts,
-    setCommonGodown
+    setCommonGodown,
+    onSearchRetailer
 }) => {
 
     const inputStyle = 'cus-inpt p-2';
@@ -131,6 +132,11 @@ const ManageSalesInvoiceGeneralInfo = ({
                                                             label: invoiceInfo?.Retailer_Name
                                                         }}
                                                         onChange={onChangeRetailerName}
+                                                        onInputChange={(inputValue, { action }) => {
+                                                            if (action === 'input-change' && inputValue.length > 3) {
+                                                                if (onSearchRetailer) onSearchRetailer(inputValue);
+                                                            }
+                                                        }}
                                                         options={[
                                                             { value: '', label: 'Search', isDisabled: true },
                                                             ...toArray(retailers).map(obj => ({

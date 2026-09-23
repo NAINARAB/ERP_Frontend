@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 import { useLocation, useNavigate } from "react-router-dom";
 import ReceiptGeneralInfo from "./receiptGeneralInfo";
 import InvolvedStaffs from "../../Payments/PaymentMaster/staffInvolved";
+import ReceiptReferences from "./receiptReferences";
 
 
 const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
@@ -224,6 +225,21 @@ const AddPaymentMaster = ({ loadingOn, loadingOff }) => {
                                         voucherType={baseData.voucherType}
                                         defaultBankMaster={baseData.defaultBankMaster}
                                         users={baseData.users}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="row p-0 mt-2">
+                            <div className="col-12 p-2 px-xxl-2 px-lg-2 px-md-3">
+                                <div className="border" style={{ minHeight: '10vh', height: '100%' }}>
+                                    <ReceiptReferences
+                                        receiptValue={receiptValue}
+                                        setReceiptValue={setReceiptValue}
+                                        receiptBillDetails={receiptBillDetails}
+                                        setReceiptBillDetails={setReceiptBillDetails}
+                                        loadingOn={loadingOn}
+                                        loadingOff={loadingOff}
                                     />
                                 </div>
                             </div>

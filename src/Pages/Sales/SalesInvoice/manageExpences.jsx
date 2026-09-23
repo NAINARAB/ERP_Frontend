@@ -152,7 +152,7 @@ const ExpencesOfSalesInvoice = ({
             });
             return hasChanges ? newExpenses : prev;
         });
-    }, [coolieExp, productTotal, expenceMaster, IS_IGST, taxType, setInvoiceExpences, isEdit]);
+    }, [coolieExp, productTotal, expenceMaster, IS_IGST, taxType, setInvoiceExpences, isEdit, invoiceProducts]);
 
     const addNewRow = () => {
         setInvoiceExpences(prev => [...prev, { ...salesInvoiceExpencesInfo, Sno: prev.length }]);
