@@ -3,7 +3,7 @@ import { Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, Dialog
 import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
 import { Addition, getSessionFiltersByPageId, getSessionUser, isEqualNumber, ISOString, LocalDateWithTime, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber } from "../../Components/functions";
-import { Add, Cancel, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
+import { Add, Cancel, Edit, FilterAlt, Print, Search, Visibility } from "@mui/icons-material";
 import { dbStatus } from "../Sales/convertedStatus";
 import { fetchLink } from "../../Components/fetchComponent";
 import FilterableTable, { createCol, ButtonActions } from "../../Components/filterableTable2";
@@ -11,7 +11,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
 import AlterHistoryTable from "../../Components/alterHistoryTable";
 import AppDialog from "../../Components/appDialogComponent";
-// NOTE: Print components could be added here if needed for Credit/Debit Notes in the future
+import CreditNotePrintModal from "./CreditNotePrintModal";
 
 export const allowedUserTypesForPreviousDateSalesEdit = [0, 1];
 
@@ -48,6 +48,7 @@ const CreditNoteList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRi
         cancelInvoice: false,
     });
     const [selectedInvoice, setSelectedInvoice] = useState(null);
+    const [printModal, setPrintModal] = useState({ open: false, row: null });
 
     useEffect(() => {
         fetchLink({
@@ -256,6 +257,11 @@ const CreditNoteList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRi
                                 <ButtonActions
                                     buttonsData={[
                                         {
+                                            name: 'Print',
+                                            onclick: () => setPrintModal({ open: true, row }),
+                                            icon: <Print fontSize="small" color="primary" />,
+                                        },
+                                        {
                                             name: 'Edit',
                                             onclick: () => {
                                                 navigate('create', {
@@ -459,6 +465,14 @@ const CreditNoteList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRi
             >
                 Do you want to cancel the invoice?
             </AppDialog>
+
+            <CreditNotePrintModal
+                open={printModal.open}
+                onClose={() => setPrintModal({ open: false, row: null })}
+                creditNote={printModal.row}
+                loadingOn={loadingOn}
+                loadingOff={loadingOff}
+            />
         </>
     )
 }
