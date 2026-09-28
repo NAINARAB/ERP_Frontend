@@ -1,3 +1,4 @@
+
 // import React, { useEffect, useState, useRef } from "react";
 // import { fetchLink } from "../../../../Components/fetchComponent";
 
@@ -187,12 +188,12 @@
 
 //     const companyName = companyInfo?.[0]?.Company_Name || row?.retailerNameGet ? companyInfo?.[0]?.Company_Name : "Company";
 
-//     // Responsive styles
+//     // Responsive styles - INCREASED FONT SIZES (+20% + 2px)
 //     const thStyle = {
 //         padding: "clamp(4px, 0.8vw, 8px) clamp(3px, 0.6vw, 8px)",
 //         backgroundColor: "#FFFF00",
 //         fontWeight: "bold",
-//         fontSize: "clamp(10px, 1.1vw, 14px)",
+//         fontSize: "clamp(16px, 1.2vw, 21px)",
 //         textAlign: "left",
 //         border: "1px solid #000",
 //         whiteSpace: "nowrap",
@@ -201,7 +202,7 @@
 //     const tdStyle = {
 //         border: "0.01px solid #000",
 //         padding: "clamp(2px, 0.5vw, 4px) clamp(2px, 0.4vw, 6px)",
-//         fontSize: "clamp(9px, 1vw, 13px)",
+//         fontSize: "clamp(16px, 1.14vw, 20px)",
 //         wordBreak: "break-word",
 //     };
 
@@ -209,7 +210,7 @@
 //         backgroundColor: "#28a745",
 //         color: "#FFFFFF",
 //         fontWeight: "bold",
-//         fontSize: "clamp(10px, 1.2vw, 14px)",
+//         fontSize: "clamp(16px, 1.26vw, 21px)",
 //         padding: "clamp(3px, 0.6vw, 6px) clamp(3px, 0.6vw, 8px)",
 //         textAlign: "center",
 //         border: "1px solid #000",
@@ -257,8 +258,9 @@
 //         <div
 //             style={{
 //                 padding: "clamp(10px, 2%, 25px)",
+//                 paddingBottom: "35px",
 //                 backgroundColor: "#fff",
-//                 fontSize: "clamp(9px, 1vw, 13px)",
+//                 fontSize: "clamp(15px, 1.08vw, 19px)",
 //                 lineHeight: "1.4",
 //                 width: "auto",
 //                 minWidth: "280px",
@@ -273,7 +275,7 @@
 //                 <h2 style={{ 
 //                     textAlign: "center", 
 //                     margin: "0 0 clamp(2px, 0.5vh, 8px)", 
-//                     fontSize: "clamp(12px, 1.8vw, 20px)", 
+//                     fontSize: "clamp(19px, 1.8vw, 24px)", 
 //                     fontWeight: "bold",
 //                     wordBreak: "break-word",
 //                 }}>
@@ -329,7 +331,7 @@
 //             <div style={{ 
 //                 textAlign: "center", 
 //                 marginTop: "clamp(8px, 1.5vh, 15px)", 
-//                 fontSize: "clamp(8px, 0.8vw, 11px)", 
+//                 fontSize: "clamp(14px, 0.84vw, 16px)", 
 //                 color: "#888",
 //                 padding: "clamp(2px, 0.3vh, 5px)",
 //             }}>
@@ -355,6 +357,46 @@ const formatDate = (dateStr) => {
     return dateStr.split("T")[0].split("-").reverse().join("-");
 };
 
+const getCleanProductName = (item) => {
+    if (!item) return "null";
+    const shortName = (item.Short_Name ?? "").toString().trim();
+    if (shortName && shortName !== "0" && shortName.toLowerCase() !== "null") {
+        return shortName;
+    }
+    const modifiedName = (item.Item_Name_Modified ?? "").toString().trim();
+    if (modifiedName && modifiedName !== "0" && modifiedName.toLowerCase() !== "null") {
+        return modifiedName;
+    }
+    const productName = (item.Product_Name ?? "").toString().trim();
+    if (productName && productName !== "0" && productName.toLowerCase() !== "null") {
+        return productName;
+    }
+    return "null";
+};
+
+const getItemRate = (item) => {
+    if (!item) return 0;
+    const rateVal = item.Rate !== null && item.Rate !== undefined && item.Rate !== "" ? Number(item.Rate) : null;
+    if (rateVal !== null && !isNaN(rateVal) && rateVal !== 0) {
+        return rateVal;
+    }
+    const maxRateVal = item.Max_Rate !== null && item.Max_Rate !== undefined && item.Max_Rate !== "" ? Number(item.Max_Rate) : null;
+    if (maxRateVal !== null && !isNaN(maxRateVal) && maxRateVal !== 0) {
+        return maxRateVal;
+    }
+    return rateVal !== null && !isNaN(rateVal) ? rateVal : (maxRateVal !== null && !isNaN(maxRateVal) ? maxRateVal : 0);
+};
+
+const numberFormat = (val) => {
+    if (val === null || val === undefined || val === "" || val === "-") return "-";
+    const num = Number(val);
+    if (isNaN(num)) return val;
+    return new Intl.NumberFormat("en-IN", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+    }).format(num);
+};
+
 const WEIGHT_RE = /^(.*?)\s*(\d+\s*(?:KGS?|GMS?|G|LTR|L|ML))\s*$/i;
 
 const extractBaseName = (name = "") => {
@@ -371,17 +413,25 @@ const mergeWeightVariants = (data) => {
     const map = new Map();
 
     data.forEach((item) => {
-        const modifiedName = (item.Item_Name_Modified || "").trim();
-        const shortName = (item.Short_Name || "").trim();
-        const productName = (item.Product_Name || "").trim();
+        const cleanName = getCleanProductName(item);
 
-        const baseName = extractBaseName(modifiedName) || extractBaseName(productName);
-        const weight = extractWeight(productName);
-        const shortBase = extractBaseName(shortName) || shortName;
-        const rate = item.Max_Rate;
+        const modifiedName = (item.Item_Name_Modified || "").toString().trim();
+        const productName = (item.Product_Name || "").toString().trim();
+        const shortName = (item.Short_Name && item.Short_Name !== "0" && item.Short_Name.toString().toLowerCase() !== "null") ? item.Short_Name.toString().trim() : "";
+
+        const baseSource = (modifiedName && modifiedName !== "0" && modifiedName.toLowerCase() !== "null") 
+            ? modifiedName 
+            : ((productName && productName !== "0" && productName.toLowerCase() !== "null") ? productName : cleanName);
+            
+        const baseName = extractBaseName(baseSource) || cleanName;
+        const weight = (cleanName !== "null") ? (extractWeight(productName) || extractWeight(modifiedName) || extractWeight(cleanName)) : null;
+        const shortBase = shortName ? (extractBaseName(shortName) || shortName) : (extractBaseName(cleanName) || cleanName);
+        const rate = getItemRate(item);
         const brand = item.POS_Brand_Name || "Other";
 
-        const key = `${brand}__${baseName.toUpperCase()}__${rate}`;
+        const key = cleanName === "null"
+            ? `${brand}__NULL__${item.Id || item.Item_Id}__${rate}`
+            : `${brand}__${baseName.toUpperCase()}__${rate}`;
 
         if (map.has(key)) {
             const existing = map.get(key);
@@ -394,9 +444,10 @@ const mergeWeightVariants = (data) => {
             const weights = weight ? [weight.toUpperCase()] : [];
             map.set(key, {
                 ...item,
+                _displayRate: rate,
                 _weights: weights,
                 _shortBase: shortBase,
-                _displayName: weights.length ? `${shortBase} ${weights[0]}` : shortBase,
+                _displayName: cleanName,
             });
         }
     });
@@ -406,20 +457,20 @@ const mergeWeightVariants = (data) => {
 
 const sortByLevels = (data) => {
     return [...data].sort((a, b) => {
-        const brandLevelA = a.Brand_Level !== null && a.Brand_Level !== undefined ? Number(a.Brand_Level) : 999;
-        const brandLevelB = b.Brand_Level !== null && b.Brand_Level !== undefined ? Number(b.Brand_Level) : 999;
+        const brandLevelA = a.Brand_Level !== null && a.Brand_Level !== undefined && a.Brand_Level !== "" ? Number(a.Brand_Level) : 999;
+        const brandLevelB = b.Brand_Level !== null && b.Brand_Level !== undefined && b.Brand_Level !== "" ? Number(b.Brand_Level) : 999;
         if (brandLevelA !== brandLevelB) return brandLevelA - brandLevelB;
 
-        const itemLevelA = a.Item_Level !== null && a.Item_Level !== undefined ? Number(a.Item_Level) : 999;
-        const itemLevelB = b.Item_Level !== null && b.Item_Level !== undefined ? Number(b.Item_Level) : 999;
+        const itemLevelA = a.Item_Level !== null && a.Item_Level !== undefined && a.Item_Level !== "" ? Number(a.Item_Level) : 999;
+        const itemLevelB = b.Item_Level !== null && b.Item_Level !== undefined && b.Item_Level !== "" ? Number(b.Item_Level) : 999;
         if (itemLevelA !== itemLevelB) return itemLevelA - itemLevelB;
 
         const brandNameA = (a.POS_Brand_Name || "").toLowerCase();
         const brandNameB = (b.POS_Brand_Name || "").toLowerCase();
         if (brandNameA !== brandNameB) return brandNameA.localeCompare(brandNameB);
 
-        const productNameA = (a.Short_Name || a.Product_Name || "").toLowerCase();
-        const productNameB = (b.Short_Name || b.Product_Name || "").toLowerCase();
+        const productNameA = (a._displayName || getCleanProductName(a)).toLowerCase();
+        const productNameB = (b._displayName || getCleanProductName(b)).toLowerCase();
         return productNameA.localeCompare(productNameB);
     });
 };
@@ -432,8 +483,6 @@ const groupByBrand = (data) =>
         return acc;
     }, {});
 
-const numberFormat = (Max_Rate) => new Intl.NumberFormat("en-IN").format(Max_Rate);
-
 const convertTo12HourFormat = (dateTimeString) => {
     if (!dateTimeString) return null;
     const timePart = dateTimeString.split("T")[1];
@@ -444,7 +493,6 @@ const convertTo12HourFormat = (dateTimeString) => {
     const hour12 = hour % 12 || 12;
     return `${hour12}:${minutes} ${period}`;
 };
-
 
 const PriceListPdfView = ({ row, companyInfo, onReady, onError }) => {
     const [posData, setPosData] = useState([]);
@@ -529,9 +577,9 @@ const PriceListPdfView = ({ row, companyInfo, onReady, onError }) => {
     const activeGroups = groupByBrand(sortedData);
     const rateDate = posData[0]?.Rate_Date ? formatDate(posData[0].Rate_Date) : getTodayDate();
 
-    const companyName = companyInfo?.[0]?.Company_Name || row?.retailerNameGet ? companyInfo?.[0]?.Company_Name : "Company";
+    const companyName = companyInfo?.[0]?.Company_Name || (row?.retailerNameGet ? companyInfo?.[0]?.Company_Name : "Company");
 
-    // Responsive styles - INCREASED FONT SIZES (+20% + 2px)
+    // Responsive styles
     const thStyle = {
         padding: "clamp(4px, 0.8vw, 8px) clamp(3px, 0.6vw, 8px)",
         backgroundColor: "#FFFF00",
@@ -579,16 +627,16 @@ const PriceListPdfView = ({ row, companyInfo, onReady, onError }) => {
                     {pairs.map(([left, right], i) => (
                         <tr key={i}>
                             <td style={tdStyle}>
-                                {left?._weights?.length >= 2 ? left._displayName : (left?.Short_Name || "-")}
+                                {left?._displayName || getCleanProductName(left) || "null"}
                             </td>
                             <td style={{ ...tdStyle, textAlign: "right", fontWeight: "500" }}>
-                                {numberFormat(left?.Max_Rate ?? "-")}
+                                {numberFormat(left?._displayRate ?? getItemRate(left))}
                             </td>
                             <td style={tdStyle}>
-                                {right ? (right?._weights?.length >= 2 ? right._displayName : (right?.Short_Name || "")) : ""}
+                                {right ? (right._displayName || getCleanProductName(right) || "null") : ""}
                             </td>
                             <td style={{ ...tdStyle, textAlign: "right", fontWeight: "500" }}>
-                                {right ? numberFormat(right?.Max_Rate ?? "-") : ""}
+                                {right ? numberFormat(right._displayRate ?? getItemRate(right)) : ""}
                             </td>
                         </tr>
                     ))}
