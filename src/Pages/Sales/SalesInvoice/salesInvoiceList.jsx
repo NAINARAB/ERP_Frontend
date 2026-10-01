@@ -681,6 +681,7 @@ const SaleInvoiceList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteR
                     {selectedInvoice?.Do_Id && (
                         <InvoiceTemplate
                             Do_Id={selectedInvoice.Do_Id}
+                            data={selectedInvoice}
                             loadingOn={loadingOn}
                             loadingOff={loadingOff}
                         />

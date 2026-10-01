@@ -15,6 +15,9 @@ const ChangePassword = lazy(() => import('./Pages/changePassword'));
 const DisplayNavigations = lazy(() => import('./Pages/SubMenu/DisplayNavigations'));
 const BankDetails = lazy(() => import('./Pages/BankDetails/bank'));
 const BankDetailsConvert = lazy(() => import('./Pages/BankDetails/convertScreen'));
+
+const BankDetailsNew = lazy(() => import('./Pages/BankDetails/bankNew'));
+const BankDetailsConvertNew = lazy(() => import('./Pages/BankDetails/convertScreenNew'));
 // -----------------------------------------------------------------------------
 // Masters
 // -----------------------------------------------------------------------------
@@ -348,6 +351,10 @@ const RoutingArray = [
     // ---------------------------------------------------------------------------
     { component: <BankDetails />, path: '/erp/bankReports/bankList' },
     { component: <BankDetailsConvert />, path: '/erp/bankReports/bankList/convertScreen' },
+
+
+    { component: <BankDetailsNew />, path: '/erp/bankReports/bankListNew' },
+    { component: <BankDetailsConvertNew />, path: '/erp/bankReports/bankList/convertScreenNew' },
 
     // ---------------------------------------------------------------------------
     // ERP - Batch Management
