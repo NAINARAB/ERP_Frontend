@@ -9,7 +9,7 @@ import a5BackgroundImage from './plain.jpeg';
 
 const SAFE_LEFT_PADDING = "0.23cm";
 
-const InvoiceTemplate = ({ Do_Id, Do_Ids = [], loadingOn, loadingOff, isCombinedPrint = false }) => {
+const InvoiceTemplate = ({ Do_Id, Do_Ids = [], data: propData, loadingOn, loadingOff, isCombinedPrint = false }) => {
 	const [data, setData] = useState([]);
 	const printRef = useRef(null);
 	const nav = useNavigate();
@@ -23,6 +23,10 @@ const InvoiceTemplate = ({ Do_Id, Do_Ids = [], loadingOn, loadingOff, isCombined
 	const [printReady, setPrintReady] = useState(false);
 
 	useEffect(() => {
+		if (propData) {
+			setData(Array.isArray(propData) ? propData : [propData]);
+			setPrintReady(true);
+		}
 		if (idsToFetch.length === 0) return;
 
 		loadingOn?.();
@@ -48,18 +52,29 @@ const InvoiceTemplate = ({ Do_Id, Do_Ids = [], loadingOn, loadingOff, isCombined
 				const results = await Promise.all(promises);
 				const allData = results
 					.filter(result => result?.success && result?.data?.[0])
-					.map(result => result.data[0]);
-				setData(allData);
+					.map((result, idx) => {
+						const fallbackItem = Array.isArray(propData) ? propData[idx] : propData;
+						return {
+							...(fallbackItem || {}),
+							...result.data[0],
+							Sale_Order_Created: result.data[0]?.Sale_Order_Created || fallbackItem?.Sale_Order_Created || "",
+							Created_BY_Name: result.data[0]?.Created_BY_Name || fallbackItem?.Created_BY_Name || ""
+						};
+					});
+				setData(allData.length > 0 ? allData : (propData ? (Array.isArray(propData) ? propData : [propData]) : []));
 				setPrintReady(true);
 			} catch (error) {
 				console.error('Error fetching invoices:', error);
+				if (propData) {
+					setData(Array.isArray(propData) ? propData : [propData]);
+				}
 			} finally {
 				loadingOff?.();
 			}
 		};
 
 		fetchAllInvoices();
-	}, [JSON.stringify(idsToFetch)]);
+	}, [JSON.stringify(idsToFetch), propData]);
 
 	const handlePrint = useReactToPrint({
 		content: () => printRef.current,
@@ -153,15 +168,74 @@ const InvoiceTemplate = ({ Do_Id, Do_Ids = [], loadingOn, loadingOff, isCombined
 
 // Single Invoice Component (your exact design)
 const SingleInvoice = ({ data, companyInfo, isPreview }) => {
-	const products = toArray(data?.productDetails);
-	const expenses = toArray(data?.expencessDetails)
-		.filter(e => !e.expenseName?.toLowerCase().includes("round off"));
-	const broker = toArray(data?.staffDetails).find(e => e.empType === "Broker");
-	const transport = toArray(data?.staffDetails).find(e => e.empType === "Transport");
+	const rawProducts = toArray(data?.productDetails || data?.Products_List || data?.productsList || data?.productsDetails);
+	const products = rawProducts.map(p => ({
+		...p,
+		itemName: p.itemName || p.Item_Name || p.Product_Name || p.productName || "",
+		hsnCode: p.hsnCode || p.HSN_Code || p.hsn_code || "",
+		gstPercentage: p.gstPercentage ?? p.Tax_Rate ?? p.taxRate ?? p.Taxble ?? p.taxble ?? 0,
+		quantity: p.quantity ?? p.Total_Qty ?? p.total_qty ?? p.Act_Qty ?? p.act_qty ?? p.Bill_Qty ?? p.bill_qty ?? 0,
+		itemRate: p.itemRate ?? p.Item_Rate ?? p.item_rate ?? p.Taxable_Rate ?? p.taxable_rate ?? 0,
+		billQuantity: p.billQuantity ?? p.Bill_Qty ?? p.bill_qty ?? p.Alt_Bill_Qty ?? p.alt_bill_qty ?? p.quantity ?? 0,
+		amount: p.amount ?? p.Final_Amo ?? p.final_amo ?? p.Amount ?? p.Taxable_Amount ?? p.taxable_amount ?? 0
+	}));
 
+	const rawExpenses = toArray(data?.expencessDetails || data?.Expenses_List || data?.Expence_Array || data?.expensesDetails || data?.expencessArray || data?.expenses || []);
+	const expenses = rawExpenses
+		.filter(e => !(e.expenseName || e.Expense_Name || e.Expence_Name || e.expense_name || "")?.toLowerCase().includes("round off"))
+		.map(e => ({
+			...e,
+			expenseName: e.expenseName || e.Expense_Name || e.Expence_Name || e.expense_name || "",
+			expenseValue: e.expenseValue ?? e.Expense_Value ?? e.Expence_Value ?? e.expense_value ?? e.Amount ?? e.amount ?? 0
+		}));
+
+	const staffList = toArray(data?.staffDetails || data?.Staffs_Array || data?.staffs || []);
+	const broker = staffList.find(e => (e.empType || e.Involved_Emp_Type)?.toLowerCase() === "broker");
+	const transport = staffList.find(e => (e.empType || e.Involved_Emp_Type)?.toLowerCase() === "transport");
+	const attendant = staffList.find(e => (e.empType || e.Involved_Emp_Type)?.toLowerCase() === "attendant");
+	const brokerName = broker?.empName || broker?.Emp_Name || broker?.name || "-";
+	const transportName = transport?.empName || transport?.Emp_Name || transport?.name || "-";
+	const attendantName = attendant?.empName || attendant?.Emp_Name || attendant?.name || "";
+
+	const formatStaffName = (name) => {
+		if (!name) return "-";
+		const trimmed = String(name).trim();
+		if (!trimmed || trimmed.toLowerCase() === "unknown" || trimmed === "-" || trimmed.toLowerCase() === "null" || trimmed.toLowerCase() === "undefined") return "-";
+		return trimmed;
+	};
+
+	const rawOrderBy =
+		data?.Sale_Order_Created ||
+		data?.SaleOrderCreated ||
+		data?.saleOrderCreated ||
+		data?.Sales_Order_Created ||
+		data?.sales_order_created ||
+		data?.Sale_Order_Created_By ||
+		attendantName ||
+		staffList.find(e => (e.empType || e.Involved_Emp_Type)?.toLowerCase()?.includes("sale") || (e.empType || e.Involved_Emp_Type)?.toLowerCase()?.includes("order"))?.empName ||
+		staffList.find(e => (e.empType || e.Involved_Emp_Type)?.toLowerCase()?.includes("sale") || (e.empType || e.Involved_Emp_Type)?.toLowerCase()?.includes("order"))?.Emp_Name ||
+		(formatStaffName(data?.Sales_Person_Name) !== "-" ? data?.Sales_Person_Name : "") ||
+		(formatStaffName(data?.salesPersonName) !== "-" ? data?.salesPersonName : "");
+
+	const orderBy = formatStaffName(rawOrderBy);
+
+	const rawInvoiceBy =
+		data?.Created_BY_Name ||
+		data?.Created_by_name ||
+		data?.Created_By_Name ||
+		data?.CreatedByGet ||
+		data?.createdByGet ||
+		data?.CreatedByName ||
+		data?.createdByName ||
+		(isNaN(Number(data?.Created_by)) ? data?.Created_by : "") ||
+		(isNaN(Number(data?.createdBy)) ? data?.createdBy : "");
+
+	const invoiceBy = formatStaffName(rawInvoiceBy);
+
+	const roundOffValue = data?.roundOffValue ?? data?.Round_off ?? data?.round_off ?? 0;
 	const totalAmount = products.reduce((a, b) => a + Number(b.amount || 0), 0);
 	const totalExpenses = expenses.reduce((a, b) => a + Number(b.expenseValue || 0), 0);
-	const netAmount = totalAmount + totalExpenses + Number(data?.roundOffValue || 0);
+	const netAmount = data?.Total_Invoice_value ?? data?.totalInvoiceValue ?? (totalAmount + totalExpenses + Number(roundOffValue || 0));
 
 	const groupHSNSummary = (list) => {
 		const map = new Map();
@@ -173,6 +247,15 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
 		return Array.from(map.entries()).map(([hsn, amount]) => ({ hsn, amount }));
 	};
 	const hsnSummary = groupHSNSummary(products);
+
+	const mailingName = data?.mailingName || data?.Retailer_Name || data?.retailerName || data?.Party_Name || "";
+	const partyLocation = data?.Party_Location || data?.Retailer_Location || data?.Location || data?.City || "";
+	const mailingAddress = data?.mailingAddress || data?.Retailer_Address || data?.Address || data?.deliveryAddress || "";
+	const mailingNumber = data?.mailingNumber || data?.Retailer_Mobile || data?.Mobile_No || data?.Contact_No || "";
+	const retailerGstNumber = data?.retailerGstNumber || data?.Retailer_GST || data?.GSTIN || data?.Gst_No || data?.retailerGstin || "";
+	const createdDate = data?.createdOn || data?.Do_Date || data?.Created_on || data?.do_date;
+	const voucherType = data?.voucherTypeGet || data?.VoucherTypeGet || data?.Voucher_Type || "";
+	const voucherNumber = data?.voucherNumber || data?.Do_Inv_No || data?.Do_No || "";
 
 	return (
 		<div
@@ -313,10 +396,10 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
 						width: "9cm",
 						padding: "2.5px"
 					}}>
-						<div style={{ color: "#000" }}>{data.mailingName},{data.Party_Location}</div>
-						<div style={{ color: "#000" }}>{data.mailingAddress}</div>
-						<div style={{ color: "#000" }}>{data.mailingNumber}</div>
-						<div style={{ color: "#000" }}>GSTIN: {data.retailerGstNumber}</div>
+						<div style={{ color: "#000" }}>{mailingName}{partyLocation ? `, ${partyLocation}` : ""}</div>
+						<div style={{ color: "#000" }}>{mailingAddress}</div>
+						<div style={{ color: "#000" }}>{mailingNumber}</div>
+						<div style={{ color: "#000" }}>{retailerGstNumber ? `GSTIN: ${retailerGstNumber}` : ""}</div>
 					</div>
 
 					<div style={{
@@ -338,7 +421,7 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
 									{/* Date: */}
 								</span>
 								<span style={{ color: "#000", marginLeft: "30px" }}>
-									{data.createdOn && new Date(data.createdOn).toLocaleDateString("en-GB")}
+									{createdDate && new Date(createdDate).toLocaleDateString("en-GB")}
 								</span>
 							</div>
 							<div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
@@ -346,7 +429,7 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
 									{/* Bill Type: */}
 								</span>
 								<b style={{ color: "#000", marginLeft: "50px" }}>
-									{data.voucherTypeGet}
+									{voucherType}
 								</b>
 							</div>
 						</div>
@@ -360,7 +443,7 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
 							<span style={{ fontWeight: "bold", color: "#000" }}>
 								{/* Bill No: */}
 							</span>
-							<b style={{ color: "#000", marginLeft: "50px" }}>{data.voucherNumber}</b>
+							<b style={{ color: "#000", marginLeft: "50px" }}>{voucherNumber}</b>
 						</div>
 
 						<div style={{
@@ -373,13 +456,13 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
 								<span style={{ fontWeight: "bold", color: "#000" }}>
 									{/* Broker: */}
 								</span>
-								<span style={{ color: "#000", marginLeft: "50px" }}>{broker?.empName || "-"}</span>
+								<span style={{ color: "#000", marginLeft: "50px" }}>{brokerName}</span>
 							</div>
 							<div style={{ display: "flex" }}>
 								<span style={{ fontWeight: "bold", color: "#000" }}>
 									{/* Transport: */}
 								</span>
-								<span style={{ color: "#000", alignItems: "center", gap: "5px" }}>{transport?.empName || "-"}</span>
+								<span style={{ color: "#000", alignItems: "center", gap: "5px" }}>{transportName}</span>
 							</div>
 						</div>
 					</div>
@@ -582,7 +665,7 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
 						</div>
 					))}
 
-					{data?.roundOffValue ? (
+					{roundOffValue ? (
 						<div style={{
 							position: "absolute",
 							top: "0.5cm",
@@ -622,7 +705,7 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
 								top: "0.45cm"
 							}}>
 								{/* {parseFloat(p.amount || 0).toFixed(2)} */}
-								{(parseFloat(data.roundOffValue) || 0).toFixed(2)}
+								{(parseFloat(roundOffValue) || 0).toFixed(2)}
 							</div>
 						</div>
 					) : null}
@@ -714,6 +797,27 @@ const SingleInvoice = ({ data, companyInfo, isPreview }) => {
 								)
 							)}
 						</span>
+					</div>
+				</div>
+
+				{/* Order By & Invoice By */}
+				<div style={{
+					position: "absolute",
+					top: "11.6cm",
+					left: "16cm",
+					width: "4.4cm",
+					overflow: "hidden",
+					fontSize: "11px",
+					color: "#000",
+					fontWeight: "bold"
+				}}>
+					<div style={{ display: "flex", height: "0.5cm", alignItems: "center", whiteSpace: "nowrap" }}>
+						<span style={{ flexShrink: 0 }}>Order By</span>
+						<span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>: {orderBy}</span>
+					</div>
+					<div style={{ display: "flex", height: "0.5cm", alignItems: "center", whiteSpace: "nowrap" }}>
+						<span style={{ flexShrink: 0 }}>Invoice By</span>
+						<span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>: {invoiceBy}</span>
 					</div>
 				</div>
 			</div>

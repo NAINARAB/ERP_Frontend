@@ -35,6 +35,7 @@ import Pendingbills from "./whatsappPreview/PendingBills";
 
 
 import SaleOrderTemplate from "./whatsappPreview/SaleOrderPdfView";
+import PurchaseOrderTemplate from "./whatsappPreview/PurchaseOrderPdfView";
 import SaleInvoiceTemplate from "./whatsappPreview/SalesInvoicePdfView";
 import StatementTemplate from "./whatsappPreview/StatementPdfView";
 import PriceListTemplate from "./whatsappPreview/PriceListPdfView";
@@ -46,8 +47,9 @@ const ASKEVA_CONFIG = {
 
 const TAB_TO_WHATSAPP_TYPE = {
     sale_invoice: "Sales_Invoice",
-    price_list: "Price_List",
     sale_order: "Sales",
+    purchase_order: "Purchase_Order",
+    price_list: "Price_List",
     receipt_list: "Receipt_List",
     outstanding: "Outstanding",
     pending_bills: "Pending_Bills",
@@ -62,6 +64,14 @@ const TEMPLATE_MAP = {
         pdf: {
             tamil: "sales_invoice_tamil_pdf",
             english: "sales_invoice_english_pdf",
+        },
+    },
+    purchase_order: {
+        dotpe: { english: "purchase_order_new_en", tamil: "purchase_order" },
+        askeva: { english: "purchaseorder_english", tamil: "purchaseorder_tamil" },
+        pdf: {
+            tamil: "purchase_order_pdftaa",
+            english: "purchase_order_pdfen",
         },
     },
     price_list: {
@@ -178,7 +188,7 @@ const isValidPhone = (phone) => {
 };
 
 const getRowKey = (row, tab) => {
-    const id = row?.DocumentId ?? row?.Ret_Id ?? row?.Receipt_Id ?? row?.So_Id ?? row?.Do_Id;
+    const id = row?.DocumentId ?? row?.Ret_Id ?? row?.Receipt_Id ?? row?.So_Id ?? row?.Do_Id ?? row?.PO_ID ?? row?.Po_Id ?? row?.Id;
     return `${tab}_${id}`;
 };
 
@@ -197,7 +207,7 @@ const setStoredPriceListPdfUrl = (companyId, url) => {
         } else {
             sessionStorage.removeItem(`pricelist_pdf_url_${companyId || 'default'}`);
         }
-    } catch {}
+    } catch { }
 };
 
 
@@ -374,7 +384,7 @@ const sendViaDotPe = async ({ phone, templateName, language = "en", bodyParams, 
 };
 
 
-const PREVIEWABLE_TABS = ["sale_invoice", "sale_order", "outstanding", "pending_bills", "price_list"];
+const PREVIEWABLE_TABS = ["sale_invoice", "sale_order", "purchase_order", "outstanding", "pending_bills", "price_list"];
 
 
 const PreviewSendDialog = ({
@@ -418,6 +428,9 @@ const PreviewSendDialog = ({
         }
         if (tab === "sale_order") {
             return <SaleOrderTemplate row={row} companyInfo={companyInfo} />;
+        }
+        if (tab === "purchase_order") {
+            return <PurchaseOrderTemplate row={row} companyInfo={companyInfo} />;
         }
         if (tab === "outstanding") {
             return (
@@ -1964,6 +1977,19 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
     const [evatoken, setEvatoken] = useState("");
 
 
+    const [allPurchaseOrders, setAllPurchaseOrders] = useState([]);
+    const [purchaseOrderFromDate, setPurchaseOrderFromDate] = useState(() =>
+        new Date().toISOString().split('T')[0]
+    );
+    const [purchaseOrderToDate, setPurchaseOrderToDate] = useState(() =>
+        new Date().toISOString().split('T')[0]
+    );
+    const [isPurchaseOrderLoading, setIsPurchaseOrderLoading] = useState(false);
+
+    const poCaptureRef = useRef(null);
+    const [poCaptureData, setPoCaptureData] = useState(null);
+    const [poPdfBuildInFlight, setPoPdfBuildInFlight] = useState(false);
+
     const soCaptureRef = useRef(null);
     const [soCaptureData, setSoCaptureData] = useState(null);
     const [soPdfBuildInFlight, setSoPdfBuildInFlight] = useState(false);
@@ -2035,6 +2061,44 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
                 onError: (err) => {
                     clearTimeout(timeoutId);
                     setInvCaptureData(null);
+                    safeReject(err instanceof Error ? err : new Error(String(err)));
+                },
+            });
+        });
+
+    const buildPurchaseOrderPdfBlob = (row) =>
+        new Promise((resolve, reject) => {
+            if (poPdfBuildInFlight) {
+                reject(new Error("A Purchase Order PDF is already being prepared. Please wait for it to finish."));
+                return;
+            }
+            setPoPdfBuildInFlight(true);
+
+            let settled = false;
+            const safeResolve = (v) => { if (!settled) { settled = true; setPoPdfBuildInFlight(false); resolve(v); } };
+            const safeReject = (e) => { if (!settled) { settled = true; setPoPdfBuildInFlight(false); reject(e); } };
+
+            const timeoutId = setTimeout(() => {
+                setPoCaptureData(null);
+                safeReject(new Error("Timed out preparing Purchase Order PDF."));
+            }, 20000);
+
+            setPoCaptureData({
+                row,
+                onReady: async () => {
+                    clearTimeout(timeoutId);
+                    try {
+                        const blob = await generatePdfBlobFromElement(poCaptureRef.current);
+                        setPoCaptureData(null);
+                        safeResolve(blob);
+                    } catch (e) {
+                        setPoCaptureData(null);
+                        safeReject(e);
+                    }
+                },
+                onError: (err) => {
+                    clearTimeout(timeoutId);
+                    setPoCaptureData(null);
                     safeReject(err instanceof Error ? err : new Error(String(err)));
                 },
             });
@@ -2626,6 +2690,20 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         A1_Phone: (phoneMapRef || phoneMap).get(Number(order.Retailer_Id)) || order.A1 || "Not Available",
     });
 
+    const processPurchaseOrder = (order, phoneMapRef) => ({
+        ...order,
+        DocumentType: "PurchaseOrder",
+        DocumentId: order.PO_ID || order.Po_Id || order.PO_Id || order.Id,
+        DocumentNumber: order.Po_Inv_No || order.PO_ID || order.Id,
+        DocumentDate: order.Po_Date || order.created_on || order.CreatedAt,
+        voucherTypeGet: order.VoucherTypeGet || order.voucherTypeGet || "Purchase Order",
+        retailerNameGet: order.Retailer_Name || order.PartyName || order.Vendor_Name,
+        Retailer_Id: order.Retailer_Id || order.PartyId || order.Vendor_Id,
+        Total_Invoice_value: order.Total_Invoice_value || order.poValue || 0,
+        OrderStatus: order.statusGet || order.OrderStatus || (order.Po_Status === 1 ? 'New' : order.Po_Status === 2 ? 'On Process' : order.Po_Status === 3 ? 'Completed' : 'Pending'),
+        A1_Phone: (phoneMapRef || phoneMap).get(Number(order.Retailer_Id || order.PartyId)) || order.retailerMobile || order.A1 || "Not Available",
+    });
+
     const fetchSaleInvoices = async (phoneMapRef = null) => {
         if (tabFetchingRef.current.sale_invoice) return;
         tabFetchingRef.current.sale_invoice = true;
@@ -2739,6 +2817,37 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
             toast.error("Failed to load pending data");
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const fetchPurchaseOrders = async (phoneMapRef = null) => {
+        if (tabFetchingRef.current.purchase_order) return;
+        tabFetchingRef.current.purchase_order = true;
+        try {
+            setIsPurchaseOrderLoading(true);
+            const response = await fetchLink({
+                address: `purchase/purchaseOrderEntry?Fromdate=${purchaseOrderFromDate}&Todate=${purchaseOrderToDate}`,
+                loadingOn,
+                loadingOff,
+            });
+            if (response?.success && response.data) {
+                const po = toArray(response.data).map((x) => processPurchaseOrder(x, phoneMapRef || phoneMap));
+                setAllPurchaseOrders(po);
+                await fetchWhatsappCountsFor(po, 'PurchaseOrder');
+                if (activeTab === "purchase_order") {
+                    setFilteredData(po);
+                }
+                tabFetchedRef.current.purchase_order = true;
+            } else {
+                setAllPurchaseOrders([]);
+                if (activeTab === "purchase_order") setFilteredData([]);
+            }
+        } catch (e) {
+            console.error("Error loading purchase orders:", e);
+            toast.error("Failed to load purchase orders");
+        } finally {
+            setIsPurchaseOrderLoading(false);
+            tabFetchingRef.current.purchase_order = false;
         }
     };
 
@@ -3323,6 +3432,43 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         };
     };
 
+    const buildPurchaseOrderParams = (row) => {
+        const companyname = companyInfo[0]?.Company_Name || "Company";
+        const customerName = row.retailerNameGet || row.Retailer_Name || row.PartyName || "Vendor";
+        const invoiceNo = row.DocumentNumber || row.Po_Inv_No || "N/A";
+        const rawDate = new Date(row.Po_Date || row.DocumentDate || row.createdOn);
+        const date = isNaN(rawDate.getTime()) ? "-" : rawDate.toLocaleDateString("en-GB");
+        const amount = Number(row.Total_Invoice_value || 0).toFixed(2);
+        const pdfUrl = `${print_app}/purchaseOrder/downloadPdf?Po_Inv_No=${btoa((invoiceNo || "").replace(/_/g, "/"))}&Company_id=${btoa(storage?.Company_id)}`;
+        return {
+            bodyParams: [companyname, customerName, date, amount, pdfUrl],
+            clientRefId: generateUniqueClientRefId("pord", invoiceNo)
+        };
+    };
+
+    const buildPurchaseOrderPdfParams = async (row) => {
+        const companyname = companyInfo[0]?.Company_Name || "Company";
+        const customerName = row.retailerNameGet || row.Retailer_Name || row.PartyName || "Vendor";
+        const invoiceNo = row.DocumentNumber || row.Po_Inv_No || "N/A";
+        const rawDate = new Date(row.Po_Date || row.DocumentDate || row.createdOn);
+        const date = isNaN(rawDate.getTime()) ? "-" : rawDate.toLocaleDateString("en-GB");
+        const amount = Number(row.Total_Invoice_value || 0).toFixed(2);
+        const documentFilename = `Purchase_Order_${String(invoiceNo).replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
+
+        const blob = await buildPurchaseOrderPdfBlob(row);
+        const documentUrl = await uploadPdfToServer("masters/whatsapp/purchaseorderpdf", blob, documentFilename, {
+            Po_Inv_No: row.DocumentNumber,
+            Po_Id: row.DocumentId,
+        });
+
+        return {
+            bodyParams: [companyname, customerName, date, amount],
+            clientRefId: generateUniqueClientRefId("pord_pdf", invoiceNo),
+            documentUrl,
+            documentFilename,
+        };
+    };
+
     const buildPriceListPdfParams = async (row) => {
         const companyname = companyInfo[0]?.Company_Name || "Company";
         const customerName = row.retailerNameGet || row.Retailer_Name || "Customer";
@@ -3497,6 +3643,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
     const getPdfParamsForTab = async (row, tab) => {
         if (tab === "sale_invoice") return buildSaleInvoicePdfParams(row);
         if (tab === "sale_order") return buildSaleOrderPdfParams(row);
+        if (tab === "purchase_order") return buildPurchaseOrderPdfParams(row);
         if (tab === "pending_bills") return buildPendingBillsPDFParams(row);
         if (tab === "outstanding") return buildOutstandingPDFParams(row);
         if (tab === "price_list") return buildPriceListPdfParams(row);
@@ -3506,20 +3653,32 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
     const sendPdfDirect = async (row, tab) => {
         if (tab === "pending_bills" && pdfBuildInFlight) {
             toast.info("A PDF is already being prepared. Please wait for it to finish.");
-            return;
+            return false;
+        }
+        if (tab === "purchase_order" && poPdfBuildInFlight) {
+            toast.info("A Purchase Order PDF is already being prepared. Please wait for it to finish.");
+            return false;
+        }
+        if (tab === "sale_order" && soPdfBuildInFlight) {
+            toast.info("A Sale Order PDF is already being prepared. Please wait for it to finish.");
+            return false;
+        }
+        if (tab === "sale_invoice" && invPdfBuildInFlight) {
+            toast.info("A Sale Invoice PDF is already being prepared. Please wait for it to finish.");
+            return false;
         }
 
         const rowKey = `${getRowKey(row, tab)}_pdf`;
         const { langName = "english" } = tabMethodSettings[tab] || {};
         if (!TEMPLATE_MAP[tab]?.pdf?.[langName.toLowerCase()]) {
             toast.error(`No PDF-attachment WhatsApp template configured for "${langName}" on this tab`);
-            return;
+            return false;
         }
 
         let phone = resolveSendPhone(row, tab);
         if (!phone || !isValidPhone(phone)) {
             toast.error("Valid phone number not found");
-            return;
+            return false;
         }
         phone = normalizePhone(phone);
 
@@ -3529,9 +3688,11 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
             await sendWhatsAppMessage({ tab, phone, bodyParams, clientRefId, documentUrl, documentFilename, usePdfTemplate: true });
             toast.success("PDF sent via WhatsApp!");
             await logWhatsappSend(row, tab);
+            return true;
         } catch (e) {
             console.error(e);
             toast.error(`Failed to send PDF: ${e.message}`);
+            return false;
         } finally {
             setSendingStates((p) => ({ ...p, [rowKey]: false }));
         }
@@ -3579,18 +3740,23 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
     const getTabAndParams = useCallback(async (row, tab) => {
         if (tab === "price_list") return { tab, ...buildPriceListParams(row) };
         if (tab === "sale_order") return { tab, ...buildSaleOrderParams(row) };
+        if (tab === "purchase_order") return { tab, ...buildPurchaseOrderParams(row) };
         if (tab === "receipt_list") return { tab, ...buildReceiptParams(row) };
         if (tab === "outstanding") return { tab, ...buildOutstandingParams(row) };
         if (tab === "pending_bills") return { tab, ...(await buildPendingBillsParams(row)) };
         if (tab === "shetsheet") return { tab, ...buildSheetsheetParams(row) };
         return { tab: "sale_invoice", ...buildSaleInvoiceParams(row) };
-    }, [buildPriceListParams, buildSaleOrderParams, buildReceiptParams, buildSaleInvoiceParams, buildOutstandingParams, buildPendingBillsParams, buildSheetsheetParams]);
+    }, [buildPriceListParams, buildSaleOrderParams, buildPurchaseOrderParams, buildReceiptParams, buildSaleInvoiceParams, buildOutstandingParams, buildPendingBillsParams, buildSheetsheetParams]);
 
 
     const buildPreviewUrl = useCallback((row, tab) => {
         const noDownloadParams = "&preview=1&autodownload=0&no_download=1";
         if (tab === "sale_invoice") return `${getPDFUrlSimple(row)}${noDownloadParams}`;
         if (tab === "sale_order") return `${getPDfUrlSalesOrder(row)}${noDownloadParams}`;
+        if (tab === "purchase_order") {
+            const formattedPoNo = (row.DocumentNumber || "").replace(/_/g, "/");
+            return `${print_app}/purchaseOrder/downloadPdf?Po_Inv_No=${btoa(formattedPoNo)}&Company_id=${btoa(storage?.Company_id)}${noDownloadParams}`;
+        }
         if (tab === "outstanding") {
             const q = `Acc_Id=${row.Acc_Id}&fromDate=${outstandingFromDate}&toDate=${outstandingToDate}&Company_id=${storage?.Company_id}`;
             return `${print_app}/statement?data=${btoa(q)}${noDownloadParams}`;
@@ -3617,6 +3783,11 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
     const handlePreviewSend = async () => {
         const { row, tab } = previewDialog;
         if (!row) return;
+        if (tab === "purchase_order") {
+            const ok = await sendPdfDirect(row, tab);
+            if (ok) closePreview();
+            return;
+        }
         const ok = await sendSingleRow(row, tab);
         if (ok) closePreview();
     };
@@ -3903,13 +4074,15 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
                         </span>
                     </Tooltip>
                 )}
-                <Tooltip title={tooltipText}>
-                    <span>
-                        <IconButton size="small" onClick={() => sendSingleRow(row, tab)} disabled={!hasPhone || busy} color={hasPhone ? "success" : "default"}>
-                            {busy ? <CircularProgress size={20} /> : <WhatsAppIcon fontSize="small" />}
-                        </IconButton>
-                    </span>
-                </Tooltip>
+                {tab !== "purchase_order" && (
+                    <Tooltip title={tooltipText}>
+                        <span>
+                            <IconButton size="small" onClick={() => sendSingleRow(row, tab)} disabled={!hasPhone || busy} color={hasPhone ? "success" : "default"}>
+                                {busy ? <CircularProgress size={20} /> : <WhatsAppIcon fontSize="small" />}
+                            </IconButton>
+                        </span>
+                    </Tooltip>
+                )}
                 {/* {tab === "pending_bills" && (
     <Tooltip title="Send Pending Bills PDF via WhatsApp">
         <span>
@@ -3927,7 +4100,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
     </Tooltip>
 )} */}
 
-                {["sale_invoice", "sale_order", "pending_bills", "outstanding", "price_list"].includes(tab) &&
+                {["sale_invoice", "sale_order", "purchase_order", "pending_bills", "outstanding", "price_list"].includes(tab) &&
                     !(tab === "price_list" && (isUpdatingPriceListPdf || priceListPdfBuildInFlight)) && (
                         <Tooltip title="Send PDF via WhatsApp">
                             <span>
@@ -4052,6 +4225,62 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
     const saleOrderColumns = useMemo(
         () => [...baseColumns, { Field_Name: "Action", isVisible: 1, isCustomCell: true, Cell: (p) => <ActionCell {...p} tab="sale_order" /> }],
         [baseColumns, ...columnDeps]
+    );
+
+    const purchaseOrderColumns = useMemo(
+        () => [
+            { Field_Name: "Select", isVisible: 1, isCustomCell: true, Cell: ({ row }) => selectCell(row) },
+            { Field_Name: "DocumentNumber", Fied_Data: "string", ColumnHeader: "PO Number", isVisible: 1 },
+            { Field_Name: "DocumentDate", isVisible: 1, ColumnHeader: "PO Date", isCustomCell: true, Cell: ({ row }) => row?.DocumentDate ? (row.DocumentDate) : "" },
+            {
+                Field_Name: "Voucher",
+                ColumnHeader: "Voucher",
+                isVisible: 1,
+                isCustomCell: true,
+                Cell: ({ row }) => row.voucherTypeGet || row.VoucherTypeGet || "Purchase Order",
+            },
+            {
+                Field_Name: "Customer",
+                ColumnHeader: "Vendor / Party",
+                isVisible: 1,
+                isCustomCell: true,
+                Cell: ({ row }) => row.retailerNameGet || row.Retailer_Name || row.PartyName || "-",
+            },
+            {
+                Field_Name: "PhoneNumber", ColumnHeader: "Phone", isVisible: 1, isCustomCell: true,
+                Cell: ({ row }) => (
+                    <PhoneSelectCell row={row} tab="purchase_order" phoneMap={phoneMap} selectedPhones={selectedPhones} setSelectedPhones={setSelectedPhones} />
+                ),
+            },
+            {
+                Field_Name: "Total_Invoice_value",
+                ColumnHeader: "PO Value",
+                isVisible: 1,
+                isCustomCell: true,
+                Cell: ({ row }) => `₹${NumberFormat(row.Total_Invoice_value || 0)}`,
+            },
+            {
+                Field_Name: "OrderStatus",
+                ColumnHeader: "Order Status",
+                isVisible: 1,
+                isCustomCell: true,
+                Cell: ({ row }) => {
+                    const status = row?.OrderStatus || row?.statusGet || "-";
+                    return (
+                        <Chip
+                            label={status}
+                            size="small"
+                            color={status === "Completed" ? "success" : status === "On Process" ? "warning" : "info"}
+                            variant="outlined"
+                            sx={{ fontSize: 11 }}
+                        />
+                    );
+                },
+            },
+            createCol("Narration", "string", "Narration"),
+            { Field_Name: "Action", isVisible: 1, isCustomCell: true, Cell: (p) => <ActionCell {...p} tab="purchase_order" /> },
+        ],
+        [selectCell, ...columnDeps]
     );
 
     const priceListColumns = [
@@ -4263,6 +4492,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         else if (activeTab === "pending_bills") src = allPendingBills;
         else if (activeTab === "sale_order") src = allSalesOrders;
         else if (activeTab === "sale_invoice") src = allSalesInvoices;
+        else if (activeTab === "purchase_order") src = allPurchaseOrders;
         else if (activeTab === "shetsheet") src = sheetsheetData;
         else src = salesInvoices;
 
@@ -4477,10 +4707,12 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         } else if (activeTab === "shetsheet") {
             setFilteredSheetsheetData(filtered);
             setFilteredData(filtered);
+        } else if (activeTab === "purchase_order") {
+            setFilteredData(filtered);
         } else {
             setFilteredData(filtered);
         }
-    }, [activeTab, sheetsheetData, sheetsheetFilters, columnFilters, saleInvoiceFilters, priceListRetailers, allReceipts, allOutstanding, allPendingBills, allSalesInvoices, allSalesOrders, salesInvoices, filterColumns]);
+    }, [activeTab, sheetsheetData, sheetsheetFilters, columnFilters, saleInvoiceFilters, priceListRetailers, allReceipts, allOutstanding, allPendingBills, allSalesInvoices, allSalesOrders, allPurchaseOrders, salesInvoices, filterColumns]);
 
     useEffect(() => { applyFilters(); }, [applyFilters]);
 
@@ -4563,6 +4795,12 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
             if (!tabFetchedRef.current.sale_order && allSalesOrders.length > 0) {
                 fetchWhatsappCountsFor(allSalesOrders, 'SalesOrder');
                 tabFetchedRef.current.sale_order = true;
+            }
+        } else if (newVal === "purchase_order") {
+            if (!tabFetchedRef.current.purchase_order) {
+                fetchPurchaseOrders();
+            } else {
+                setFilteredData(allPurchaseOrders);
             }
         } else if (newVal === "receipt_list") {
             if (!tabFetchedRef.current.receipt_list) {
@@ -4676,6 +4914,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         else if (activeTab === "outstanding") fetchOutstanding();
         else if (activeTab === "pending_bills") fetchPendingBills();
         else if (activeTab === "sale_invoice") fetchSaleInvoices();
+        else if (activeTab === "purchase_order") fetchPurchaseOrders();
         else if (activeTab === "shetsheet") fetchSheetsheetData();
         else if (viewMode === "pending") fetchPendingInvoices();
         else fetchAllInvoices(true);
@@ -4705,6 +4944,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         let src;
         if (activeTab === "price_list") src = priceListRetailers;
         else if (activeTab === "receipt_list") src = allReceipts;
+        else if (activeTab === "purchase_order") src = allPurchaseOrders;
         else if (activeTab === "shetsheet") src = sheetsheetData;
         else src = salesInvoices;
 
@@ -4757,42 +4997,36 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         if (!selectedCount) return null;
         return (
             <>
-                <Tooltip title={`Send WhatsApp to ${selectedCount} selected`}>
-                    <Button variant="contained" color="success" size="small"
-                        startIcon={<WhatsAppIcon />} endIcon={<ArrowDropDown />}
-                        onClick={(e) => setBulkMenuAnchor(e.currentTarget)}
-                        sx={{ textTransform: "none", bgcolor: "#25D366", "&:hover": { bgcolor: "#1ebe5c" } }}>
-                        Send ({selectedCount})
-                    </Button>
-                </Tooltip>
-                <Menu anchorEl={bulkMenuAnchor} open={Boolean(bulkMenuAnchor)} onClose={() => setBulkMenuAnchor(null)}>
-                    <MenuItem onClick={() => handleBulkSend("parallel")}>
-                        <ListItemIcon><SendAndArchive fontSize="small" color="success" /></ListItemIcon>
-                        <ListItemText primary="Send Simultaneously" secondary={`Fire all ${selectedCount} messages at once`} />
-                    </MenuItem>
-                    <MenuItem onClick={() => handleBulkSend("sequential")}>
-                        <ListItemIcon><Send fontSize="small" color="info" /></ListItemIcon>
-                        <ListItemText primary="Send One by One" secondary="Sequential with progress tracking" />
-                    </MenuItem>
-                </Menu>
-                {/* {activeTab === "pending_bills" && (
-                    <Tooltip title={`Send Pending Bills PDF to ${selectedCount} selected`}>
-                        <Button variant="contained" color="error" size="small"
-                            startIcon={<PictureAsPdf />}
-                            onClick={handleBulkSendPendingBillsPdf}
-                            sx={{ textTransform: "none", ml: 1 }}>
-                            Send PDF ({selectedCount})
-                        </Button>
-                    </Tooltip>
-                )} */}
-                {["sale_invoice", "sale_order", "pending_bills", "outstanding", "price_list"].includes(activeTab) &&
+                {activeTab !== "purchase_order" && (
+                    <>
+                        <Tooltip title={`Send WhatsApp to ${selectedCount} selected`}>
+                            <Button variant="contained" color="success" size="small"
+                                startIcon={<WhatsAppIcon />} endIcon={<ArrowDropDown />}
+                                onClick={(e) => setBulkMenuAnchor(e.currentTarget)}
+                                sx={{ textTransform: "none", bgcolor: "#25D366", "&:hover": { bgcolor: "#1ebe5c" } }}>
+                                Send ({selectedCount})
+                            </Button>
+                        </Tooltip>
+                        <Menu anchorEl={bulkMenuAnchor} open={Boolean(bulkMenuAnchor)} onClose={() => setBulkMenuAnchor(null)}>
+                            <MenuItem onClick={() => handleBulkSend("parallel")}>
+                                <ListItemIcon><SendAndArchive fontSize="small" color="success" /></ListItemIcon>
+                                <ListItemText primary="Send Simultaneously" secondary={`Fire all ${selectedCount} messages at once`} />
+                            </MenuItem>
+                            <MenuItem onClick={() => handleBulkSend("sequential")}>
+                                <ListItemIcon><Send fontSize="small" color="info" /></ListItemIcon>
+                                <ListItemText primary="Send One by One" secondary="Sequential with progress tracking" />
+                            </MenuItem>
+                        </Menu>
+                    </>
+                )}
+                {["sale_invoice", "sale_order", "purchase_order", "pending_bills", "outstanding", "price_list"].includes(activeTab) &&
                     !(activeTab === "price_list" && (isUpdatingPriceListPdf || priceListPdfBuildInFlight)) && (
                         <Tooltip title={`Send PDF to ${selectedCount} selected`}>
                             <Button variant="contained" color="error" size="small"
                                 startIcon={<PictureAsPdf />}
                                 onClick={() => handleBulkSendPdf(activeTab)}
                                 disabled={activeTab === "price_list" && (isUpdatingPriceListPdf || priceListPdfBuildInFlight)}
-                                sx={{ textTransform: "none", ml: 1 }}>
+                                sx={{ textTransform: "none", ml: activeTab === "purchase_order" ? 0 : 1 }}>
                                 Send PDF ({selectedCount})
                             </Button>
                         </Tooltip>
@@ -4917,13 +5151,13 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
 
             <BulkWhatsAppButton />
 
-            {activeTab !== "price_list" && activeTab !== "outstanding" && activeTab !== "pending_bills" && activeTab !== "sale_invoice" && activeTab !== "shetsheet" && (
+            {activeTab !== "price_list" && activeTab !== "outstanding" && activeTab !== "pending_bills" && activeTab !== "sale_invoice" && activeTab !== "purchase_order" && activeTab !== "shetsheet" && (
                 <IconButton size="small" onClick={() => setFilters((p) => ({ ...p, filterDialog: true }))} disabled={isRefreshing}>
                     <FilterAlt />
                 </IconButton>
             )}
 
-            {viewMode === "pending" && activeTab !== "price_list" && activeTab !== "receipt_list" && activeTab !== "outstanding" && activeTab !== "pending_bills" && activeTab !== "sale_invoice" && activeTab !== "shetsheet" && (
+            {viewMode === "pending" && activeTab !== "price_list" && activeTab !== "receipt_list" && activeTab !== "outstanding" && activeTab !== "pending_bills" && activeTab !== "sale_invoice" && activeTab !== "purchase_order" && activeTab !== "shetsheet" && (
                 <>
                     <Button variant="contained" size="small" startIcon={<Download />} endIcon={<ArrowDropDown />}
                         onClick={(e) => setDownloadAnchorEl(e.currentTarget)}
@@ -4944,7 +5178,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
                 </>
             )}
 
-            {activeTab !== "price_list" && activeTab !== "receipt_list" && activeTab !== "outstanding" && activeTab !== "pending_bills" && activeTab !== "sale_invoice" && activeTab !== "shetsheet" && (
+            {activeTab !== "price_list" && activeTab !== "receipt_list" && activeTab !== "outstanding" && activeTab !== "pending_bills" && activeTab !== "sale_invoice" && activeTab !== "purchase_order" && activeTab !== "shetsheet" && (
                 <input type="date" className="cus-inpt w-auto"
                     value={filters.reqDate}
                     onChange={(e) => setFilters((p) => ({ ...p, reqDate: e.target.value, fetchTrigger: p.fetchTrigger + 1 }))}
@@ -4998,7 +5232,12 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
                 tab={previewDialog.tab}
                 title={previewDialog.row ? `Preview — ${previewDialog.row.DocumentNumber || previewDialog.row.retailerNameGet || previewDialog.row.Retailer_Name || ""}` : "Preview"}
                 onSend={handlePreviewSend}
-                sending={!!sendingStates[getRowKey(previewDialog.row || {}, previewDialog.tab)]}
+                sending={
+                    !!sendingStates[getRowKey(previewDialog.row || {}, previewDialog.tab)] ||
+                    !!sendingStates[`${getRowKey(previewDialog.row || {}, previewDialog.tab)}_pdf`] ||
+                    (previewDialog.tab === "purchase_order" && poPdfBuildInFlight) ||
+                    (previewDialog.tab === "pending_bills" && pdfBuildInFlight)
+                }
                 companyInfo={companyInfo}
                 outstandingFromDate={outstandingFromDate}
                 outstandingToDate={outstandingToDate}
@@ -5036,6 +5275,19 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
                                     companyInfo={companyInfo}
                                     onReady={soCaptureData.onReady}
                                     onError={soCaptureData.onError}
+                                />
+                            )}
+                        </div>
+                    </Box>
+
+                    <Box sx={{ position: "fixed", top: -99999, left: -99999, width: 794 }}>
+                        <div ref={poCaptureRef}>
+                            {poCaptureData && (
+                                <PurchaseOrderTemplate
+                                    row={poCaptureData.row}
+                                    companyInfo={companyInfo}
+                                    onReady={poCaptureData.onReady}
+                                    onError={poCaptureData.onError}
                                 />
                             )}
                         </div>
@@ -5093,9 +5345,10 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
         if (activeTab === "pending_bills") return filteredPendingBills;
         if (activeTab === "receipt_list") return allReceipts;
         if (activeTab === "sale_invoice") return allSalesInvoices;
+        if (activeTab === "purchase_order") return allPurchaseOrders;
         if (activeTab === "shetsheet") return filteredSheetsheetData;
         return filteredData;
-    }, [activeTab, filteredPriceListRetailers, filteredOutstanding, filteredPendingBills, allReceipts, allSalesInvoices, filteredSheetsheetData, filteredData]);
+    }, [activeTab, filteredPriceListRetailers, filteredOutstanding, filteredPendingBills, allReceipts, allSalesInvoices, allPurchaseOrders, filteredSheetsheetData, filteredData]);
 
     return (
         <>
@@ -5103,6 +5356,7 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
                 <Tabs value={activeTab} onChange={(_, v) => handleTabChange(v)} textColor="primary" indicatorColor="primary">
                     <Tab label="Sale Order" value="sale_order" />
                     <Tab label="Sale Invoice" value="sale_invoice" />
+                    <Tab label="Purchase Order" value="purchase_order" />
                     <Tab label="Price List" value="price_list" />
                     <Tab label="Receipt List" value="receipt_list" />
                     <Tab label="Transaction" value="outstanding" />
@@ -5116,6 +5370,36 @@ const Whatsapp = ({ loadingOn, loadingOff, AddRights, EditRights, PrintRights, p
                     <WhatsAppFilterBar activeTab={activeTab} dataSource={activeDataSource} columnFilters={columnFilters} setColumnFilters={setColumnFilters} />
                     <FilterableTable title={viewMode === "pending" ? "Pending Sale Orders" : "Sale Orders"}
                         columns={saleOrderColumns} dataArray={filteredData} EnableSerialNumber ButtonArea={sharedButtonArea} />
+                </>
+            )}
+
+            {activeTab === "purchase_order" && (
+                <>
+                    <WhatsAppFilterBar activeTab={activeTab} dataSource={activeDataSource} columnFilters={columnFilters} setColumnFilters={setColumnFilters} />
+                    <FilterableTable title="Purchase Orders" columns={purchaseOrderColumns} dataArray={filteredData} EnableSerialNumber
+                        ButtonArea={
+                            <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+                                <TextField label="From Date" type="date" size="small" value={purchaseOrderFromDate}
+                                    onChange={(e) => setPurchaseOrderFromDate(e.target.value)}
+                                    InputLabelProps={{ shrink: true }} sx={{ minWidth: 160 }} />
+                                <TextField label="To Date" type="date" size="small" value={purchaseOrderToDate}
+                                    onChange={(e) => setPurchaseOrderToDate(e.target.value)}
+                                    InputLabelProps={{ shrink: true }} sx={{ minWidth: 160 }} />
+                                <Button variant="contained" size="small" startIcon={<Search />} onClick={() => fetchPurchaseOrders()} disabled={isPurchaseOrderLoading}>
+                                    {isPurchaseOrderLoading ? "Loading…" : "Search"}
+                                </Button>
+                                <Button variant="outlined" size="small" onClick={() => {
+                                    const today = new Date().toISOString().split('T')[0];
+                                    setPurchaseOrderFromDate(today);
+                                    setPurchaseOrderToDate(today);
+                                    setColumnFilters({});
+                                    setTimeout(() => fetchPurchaseOrders(), 100);
+                                }}>Reset</Button>
+                                <Divider orientation="vertical" flexItem />
+                                {sharedButtonArea}
+                            </Stack>
+                        }
+                    />
                 </>
             )}
 
