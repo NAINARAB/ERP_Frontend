@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { checkIsNumber, getSessionFiltersByPageId, isEqualNumber, ISOString, isValidDate, reactSelectFilterLogic, setSessionFilters, stringCompare, Subraction, toArray, toNumber } from '../../../Components/functions';
+import { checkIsNumber, getSessionFiltersByPageId, isEqualNumber, ISOString, isValidDate, LocalDate, reactSelectFilterLogic, setSessionFilters, stringCompare, Subraction, toArray, toNumber } from '../../../Components/functions';
 import FilterableTable, { ButtonActions, formatString } from '../../../Components/filterableTable2';
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Tooltip } from "@mui/material";
 import { Cancel, Edit, FilterAlt, Print, Search, ToggleOff, ToggleOn } from "@mui/icons-material";
@@ -531,7 +531,27 @@ const StockMangement = ({ loadingOn, loadingOff, EditRights, AddRights, DeleteRi
                 onSubmit={cancelProcessing}
                 submitText="Cancel Processing"
             >
-                Do you want to cancel the Processing?
+                <p>Do you want to cancel the Processing?</p>
+                <table className="table table-borderless">
+                    <tbody>
+                        <tr>
+                            <td>Voucher No</td>
+                            <td>{selectedRow?.VoucherNo || '-'}</td>
+                        </tr>
+                        <tr>
+                            <td>Voucher Type</td>
+                            <td>{selectedRow?.VoucherType || '-'}</td>
+                        </tr>
+                        <tr>
+                            <td>Date</td>
+                            <td>{selectedRow?.Date ? LocalDate(selectedRow?.Date) : '-'}</td>
+                        </tr>
+                        <tr>
+                            <td>Created By</td>
+                            <td>{selectedRow?.createdBy || '-'}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </AppDialog>
         </>
     )

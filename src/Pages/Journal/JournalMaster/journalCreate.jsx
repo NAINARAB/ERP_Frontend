@@ -43,9 +43,15 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
         moduleConfiguration: []
     });
 
-    const [refModal, setRefModal] = useState({ open: false, line: null });
-    const openRef = useCallback((line) => setRefModal({ open: true, line }), []);
-    const closeRef = useCallback(() => setRefModal((s) => ({ ...s, open: false })), []);
+    const [refModal, setRefModal] = useState({ open: false, lineId: null, line: null });
+    const openRef = useCallback((line) => setRefModal({ open: true, lineId: line?.LineId, line }), []);
+    const closeRef = useCallback(() => setRefModal({ open: false, lineId: null, line: null }), []);
+
+    const activeLine = useMemo(() => {
+        if (!refModal.open) return null;
+        const targetId = refModal.lineId || refModal.line?.LineId;
+        return journalEntriesInfo.find(e => e.LineId === targetId) || refModal.line;
+    }, [refModal.open, refModal.lineId, refModal.line, journalEntriesInfo]);
 
     useEffect(() => {
         (async () => {
@@ -244,11 +250,14 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
         //     journalEntriesInfo.map(e => e.LineNum)
         // );
 
+        const sanitizeEntries = (lines) =>
+            lines.map(({ pendingRefDetails, isPendingRefFetched, isPendingRefLoading, ...rest }) => rest);
+
         const bodyData = {
             ...journalGeneralInfo,
             approved_by: Number(journalGeneralInfo?.approved_by) || null,
             cost_center_mapping: Number(journalGeneralInfo?.cost_center_mapping) || 0,
-            Entries: [...debitLines, ...creditLines],
+            Entries: sanitizeEntries([...debitLines, ...creditLines]),
             journalStaffInvolved: journalStaffInvolved
             // BillReferences: journalBillReference.filter(ref =>
             //     entryLineNums.has(ref.LineNum)
@@ -344,6 +353,7 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
 
                 <JournalEntriesPanel
                     {...baseData}
+                    JournalAutoId={journalGeneralInfo?.JournalAutoId || ''}
                     journalEntriesInfo={journalEntriesInfo}
                     setJournalEntriesInfo={setJournalEntriesInfo}
                     journalBillReference={journalBillReference}
@@ -357,7 +367,7 @@ const JournalCreateContainer = ({ loadingOn, loadingOff }) => {
                 <BillRefDialog
                     open={refModal.open}
                     onClose={closeRef}
-                    line={refModal.line}
+                    line={activeLine}
                     journalBillReference={journalBillReference}
                     setJournalBillReference={setJournalBillReference}
                     JournalAutoId={journalGeneralInfo?.JournalAutoId || ''}

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
-import { Addition, getSessionFiltersByPageId, getSessionUser, isEqualNumber, ISOString, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber } from "../../Components/functions";
+import { Addition, getSessionFiltersByPageId, getSessionUser, isEqualNumber, ISOString, LocalDate, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber } from "../../Components/functions";
 import { Add, Cancel, Edit, FilterAlt, Print, Search, Visibility } from "@mui/icons-material";
 import { dbStatus } from "../Sales/convertedStatus";
 import { fetchLink } from "../../Components/fetchComponent";
@@ -463,7 +463,27 @@ const DebitNoteList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRig
                 onSubmit={cancelInvoice}
                 submitText="Cancel Invoice"
             >
-                Do you want to cancel the invoice?
+                <p>Do you want to cancel the invoice?</p>
+                <table className="table table-borderless">
+                    <tbody>
+                        <tr>
+                            <td>Party</td>
+                            <td>{selectedInvoice?.Retailer_Name || '-'}</td>
+                        </tr>
+                        <tr>
+                            <td>Invoice No</td>
+                            <td>{selectedInvoice?.DB_Inv_No || '-'}</td>
+                        </tr>
+                        <tr>
+                            <td>Date</td>
+                            <td>{selectedInvoice?.DB_Date ? LocalDate(selectedInvoice?.DB_Date) : '-'}</td>
+                        </tr>
+                        <tr>
+                            <td>Amount</td>
+                            <td>{NumberFormat(selectedInvoice?.Total_Invoice_value)}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </AppDialog>
 
             <DebitNotePrintModal

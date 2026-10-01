@@ -1,39 +1,69 @@
 import { Button, IconButton } from "@mui/material";
 import { useState, useEffect } from "react";
 import { salesInvoiceStaffInfo } from "./variable";
-import { checkIsNumber, isEqualNumber, toArray } from "../../../Components/functions";
+import { checkIsNumber, isEqualNumber, toArray, toNumber } from "../../../Components/functions";
 import { customSelectStyles } from "../../../Components/tablecolumn";
 import { Delete } from "@mui/icons-material";
 import Select from "react-select";
 
 const InvolvedStaffs = ({ StaffArray = [], setStaffArray, costCenter = [], costCategory = [] }) => {
-    
-    const getAllStaffs = (currentIndex) => {
-        return toArray(costCenter)
-            .filter(staff => 
-       
-                !StaffArray.some((st, idx) => 
-                    idx !== currentIndex && 
-                    isEqualNumber(st.Emp_Id, staff.Cost_Center_Id)
-                )
-            )
-            .map(st => ({
-                value: st.Cost_Center_Id,
-                label: st.Allias_Name,
-                costCenterName: st.Cost_Center_Name,
-                userType: st.User_Type 
-            }));
+
+    const getStaffOrderBy = (staff) => {
+        if (checkIsNumber(staff?.Order_By)) {
+            return Number(staff.Order_By);
+        }
+        const category = toArray(costCategory).find(
+            cat => isEqualNumber(cat.Cost_Category_Id, staff?.Emp_Type_Id)
+        );
+        if (checkIsNumber(category?.Order_By)) {
+            return Number(category.Order_By);
+        }
+        return null;
     };
 
-    const getFilteredStaffs = (categoryId, currentIndex) => {
-        if (!checkIsNumber(categoryId)) return [];
-        
+    const sortStaffs = (list) => {
+        return [...list].sort((a, b) => {
+            const aOrder = getStaffOrderBy(a);
+            const bOrder = getStaffOrderBy(b);
+            if (aOrder === null && bOrder === null) return 0;
+            if (aOrder === null) return 1;
+            if (bOrder === null) return -1;
+            return aOrder - bOrder;
+        });
+    };
+
+    useEffect(() => {
+        if (costCategory.length > 0 && StaffArray.length > 0) {
+            let hasChanges = false;
+            const updated = StaffArray.map(staff => {
+                const category = toArray(costCategory).find(
+                    cat => isEqualNumber(cat.Cost_Category_Id, staff.Emp_Type_Id)
+                );
+                const correctOrderBy = (category && checkIsNumber(category.Order_By))
+                    ? category.Order_By
+                    : (staff.Order_By ?? "");
+
+                if (staff.Order_By !== correctOrderBy) {
+                    hasChanges = true;
+                    return { ...staff, Order_By: correctOrderBy };
+                }
+                return staff;
+            });
+
+            const sorted = sortStaffs(updated);
+            const isDifferentOrder = sorted.some((item, idx) => item !== StaffArray[idx]);
+
+            if (hasChanges || isDifferentOrder) {
+                setStaffArray(sorted);
+            }
+        }
+    }, [costCategory]);
+
+    const getAllStaffs = (currentIndex, currentRow) => {
         return toArray(costCenter)
-            .filter(staff => 
-                isEqualNumber(staff.User_Type, categoryId) && 
-          
-                !StaffArray.some((st, idx) => 
-                    idx !== currentIndex && 
+            .filter(staff =>
+                !StaffArray.some((st, idx) =>
+                    (currentRow ? st !== currentRow : idx !== currentIndex) &&
                     isEqualNumber(st.Emp_Id, staff.Cost_Center_Id)
                 )
             )
@@ -45,43 +75,78 @@ const InvolvedStaffs = ({ StaffArray = [], setStaffArray, costCenter = [], costC
             }));
     };
 
-    const handleStaffChange = (selectedOption, index) => {
-        setStaffArray(prev => 
-            prev.map((staffRow, idx) => {
-                if (idx === index) {
-                    const selectedStaff = toArray(costCenter).find(
-                        st => isEqualNumber(st.Cost_Center_Id, selectedOption.value)
-                    );
-                    
+    const getFilteredStaffs = (categoryId, currentIndex, currentRow) => {
+        if (!checkIsNumber(categoryId)) return [];
+
+        return toArray(costCenter)
+            .filter(staff =>
+                isEqualNumber(staff.User_Type, categoryId) &&
+                !StaffArray.some((st, idx) =>
+                    (currentRow ? st !== currentRow : idx !== currentIndex) &&
+                    isEqualNumber(st.Emp_Id, staff.Cost_Center_Id)
+                )
+            )
+            .map(st => ({
+                value: st.Cost_Center_Id,
+                label: st.Allias_Name,
+                costCenterName: st.Cost_Center_Name,
+                userType: st.User_Type
+            }));
+    };
+
+    const handleStaffChange = (selectedOption, index, targetRow) => {
+        setStaffArray(prev => {
+            const selectedStaff = toArray(costCenter).find(
+                st => isEqualNumber(st.Cost_Center_Id, selectedOption.value)
+            );
+            const userType = selectedStaff?.User_Type || "";
+            const category = toArray(costCategory).find(
+                cat => isEqualNumber(cat.Cost_Category_Id, userType)
+            );
+            const orderBy = (category && checkIsNumber(category.Order_By)) ? category.Order_By : "";
+
+            const targetIndex = (targetRow && prev.indexOf(targetRow) !== -1) ? prev.indexOf(targetRow) : index;
+
+            const updated = prev.map((staffRow, idx) => {
+                if (idx === targetIndex) {
                     return {
                         ...staffRow,
                         Emp_Id: Number(selectedOption.value),
                         Emp_Name: selectedOption.label,
-                     
-                        Emp_Type_Id: selectedStaff?.User_Type || ""
+                        Emp_Type_Id: userType,
+                        Order_By: orderBy
                     };
                 }
                 return staffRow;
-            })
-        );
+            });
+
+            return sortStaffs(updated);
+        });
     };
 
-    const handleCategoryChange = (e, index) => {
+    const handleCategoryChange = (e, index, targetRow) => {
         const newCategoryId = e.target.value;
-        setStaffArray(prev => 
-            prev.map((staffRow, idx) => {
-                if (idx === index) {
-           
+        const category = toArray(costCategory).find(
+            cat => isEqualNumber(cat.Cost_Category_Id, newCategoryId)
+        );
+        const orderBy = (category && checkIsNumber(category.Order_By)) ? category.Order_By : "";
+
+        setStaffArray(prev => {
+            const targetIndex = (targetRow && prev.indexOf(targetRow) !== -1) ? prev.indexOf(targetRow) : index;
+
+            const updated = prev.map((staffRow, idx) => {
+                if (idx === targetIndex) {
                     const currentStaff = toArray(costCenter).find(
                         st => isEqualNumber(st.Cost_Center_Id, staffRow.Emp_Id)
                     );
-                    
-                    const shouldClearStaff = currentStaff && 
+
+                    const shouldClearStaff = currentStaff &&
                         !isEqualNumber(currentStaff.User_Type, newCategoryId);
-                    
+
                     return {
                         ...staffRow,
                         Emp_Type_Id: newCategoryId,
+                        Order_By: orderBy,
                         ...(shouldClearStaff ? {
                             Emp_Id: "",
                             Emp_Name: ""
@@ -89,17 +154,17 @@ const InvolvedStaffs = ({ StaffArray = [], setStaffArray, costCenter = [], costC
                     };
                 }
                 return staffRow;
-            })
-        );
+            });
+
+            return sortStaffs(updated);
+        });
     };
-    
+
     const getStaffOptions = (row, index) => {
         if (checkIsNumber(row?.Emp_Type_Id)) {
-            
-            return getFilteredStaffs(row.Emp_Type_Id, index);
+            return getFilteredStaffs(row.Emp_Type_Id, index, row);
         } else {
-  
-            return getAllStaffs(index);
+            return getAllStaffs(index, row);
         }
     };
 
@@ -135,7 +200,7 @@ const InvolvedStaffs = ({ StaffArray = [], setStaffArray, costCenter = [], costC
                 </thead>
 
                 <tbody>
-                    {toArray(StaffArray).map((row, index) => (
+                    {sortStaffs(toArray(StaffArray)).map((row, index) => (
                         <tr key={index}>
                             {/* <td className='fa-13 vctr text-center'>{index + 1}</td> */}
                             <td className='fa-13 w-100 p-0'>
@@ -144,7 +209,7 @@ const InvolvedStaffs = ({ StaffArray = [], setStaffArray, costCenter = [], costC
                                         value: row?.Emp_Id,
                                         label: row?.Emp_Name,
                                     } : null}
-                                    onChange={(e) => handleStaffChange(e, index)}
+                                    onChange={(e) => handleStaffChange(e, index, row)}
                                     options={getStaffOptions(row, index)}
                                     styles={customSelectStyles}
                                     isSearchable={true}
@@ -165,10 +230,10 @@ const InvolvedStaffs = ({ StaffArray = [], setStaffArray, costCenter = [], costC
                                     }}
                                 />
                             </td>
-                              <td className='fa-13 vctr p-0' style={{ maxWidth: '130px', minWidth: '100px' }}>
+                            <td className='fa-13 vctr p-0' style={{ maxWidth: '130px', minWidth: '100px' }}>
                                 <select
                                     value={row?.Emp_Type_Id || ""}
-                                    onChange={(e) => handleCategoryChange(e, index)}
+                                    onChange={(e) => handleCategoryChange(e, index, row)}
                                     className="cus-inpt p-2 border-0 w-100"
                                 >
                                     <option value="">Select Category</option>
@@ -179,13 +244,14 @@ const InvolvedStaffs = ({ StaffArray = [], setStaffArray, costCenter = [], costC
                                     ))}
                                 </select>
                             </td>
-                           
+
                             <td className='fa-13 vctr p-0'>
                                 <IconButton
                                     onClick={() => {
-                                        setStaffArray(prev => 
-                                            prev.filter((_, filIndex) => index !== filIndex)
-                                        );
+                                        setStaffArray(prev => {
+                                            const targetIndex = prev.indexOf(row) !== -1 ? prev.indexOf(row) : index;
+                                            return prev.filter((_, filIndex) => targetIndex !== filIndex);
+                                        });
                                     }}
                                     size='small'
                                 >

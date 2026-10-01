@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useEffect } from "react";
 import { IconButton, Tooltip } from "@mui/material";
 import { Delete, PlaylistAdd } from "@mui/icons-material";
 import Select from "react-select";
@@ -18,7 +18,19 @@ const LineCard = memo(function LineCard({
     openRef,
     journalBillReference,
     setJournalBillReference,
+    fetchPendingReferences,
 }) {
+
+    useEffect(() => {
+        if (
+            checkIsNumber(entry?.Acc_Id) &&
+            !entry?.isPendingRefFetched &&
+            !entry?.isPendingRefLoading &&
+            fetchPendingReferences
+        ) {
+            fetchPendingReferences(entry.Acc_Id, entry.LineId);
+        }
+    }, [entry?.Acc_Id, entry?.isPendingRefFetched, entry?.isPendingRefLoading, entry?.LineId, fetchPendingReferences]);
 
     const selected =
         entry?.Acc_Id != null ? accountOptions.find((o) => isEqualNumber(o.value, entry.Acc_Id)) || null : null;
@@ -34,20 +46,33 @@ const LineCard = memo(function LineCard({
                         options={accountOptions}
                         isOptionDisabled={(opt) => isOptionDisabled(opt, entry)}
                         onChange={(opt) => {
-
                             const isSundryParty = (accountOptions.find(
                                 ac => isEqualNumber(ac?.value, opt?.value)) || {}
                             )?.isSundryParty;
 
+                            const newAccId = !opt ? null : toNum(opt.value);
+
+                            if (setJournalBillReference) {
+                                setJournalBillReference((prev) =>
+                                    prev.filter((b) => b.LineId !== entry.LineId)
+                                );
+                            }
+
                             updateLine(
                                 entry.LineId,
                                 {
-                                    Acc_Id: !opt ? null : toNum(opt.value),
+                                    Acc_Id: newAccId,
                                     AccountGet: !opt ? "" : opt.label,
-                                    isSundryParty: isSundryParty ? 1 : 0
+                                    isSundryParty: isSundryParty ? 1 : 0,
+                                    pendingRefDetails: [],
+                                    isPendingRefFetched: false,
+                                    isPendingRefLoading: checkIsNumber(newAccId)
                                 }
                             );
 
+                            if (checkIsNumber(newAccId) && fetchPendingReferences) {
+                                fetchPendingReferences(newAccId, entry.LineId);
+                            }
                         }}
                         isClearable
                         isSearchable
@@ -78,10 +103,22 @@ const LineCard = memo(function LineCard({
                 </div>
 
                 <div className="col-sm-4 p-0 m-0 d-flex align-items-end justify-content-end">
-                    <Tooltip title="Add Ref">
+                    <Tooltip title={entry?.isPendingRefLoading ? "Loading references..." : "Add Ref"}>
                         <span>
-                            <IconButton size="small" onClick={() => openRef(entry)} disabled={!checkIsNumber(entry.Acc_Id)}>
-                                <PlaylistAdd className="fa-20" />
+                            <IconButton
+                                size="small"
+                                onClick={() => openRef(entry)}
+                                disabled={!checkIsNumber(entry.Acc_Id)}
+                            >
+                                {entry?.isPendingRefLoading ? (
+                                    <span
+                                        className="spinner-border spinner-border-sm text-primary"
+                                        style={{ width: "18px", height: "18px", borderWidth: "2px" }}
+                                        role="status"
+                                    />
+                                ) : (
+                                    <PlaylistAdd className="fa-20" />
+                                )}
                             </IconButton>
                         </span>
                     </Tooltip>

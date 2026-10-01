@@ -6,7 +6,8 @@ import {
     checkIsNumber, toNumber, toArray, RoundNumber, isValidNumber,
     rid, filterableText, generateUUID, reactSelectFilterLogic,
     Division, Multiplication,
-    stringCompare
+    stringCompare,
+    onlynumAndNegative
 } from "../../../Components/functions";
 import { Close } from "@mui/icons-material";
 import { Add, Delete } from "@mui/icons-material";
@@ -132,7 +133,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading, PrintRights }) =
                 ] = await Promise.all([
                     fetchLink({ address: `masters/branch/dropDown` }),
                     fetchLink({ address: `masters/products` }),
-                    fetchLink({ address: `masters/retailers/dropDownSearch` }),
+                    fetchLink({ address: `masters/retailers/dropDownSearch?Selected_Retailer_Id=${editValues?.Retailer_Id || ''}` }),
                     fetchLink({ address: `masters/voucher?module=SALE_INVOICE` }),
                     fetchLink({ address: `masters/uom` }),
                     fetchLink({ address: `dataEntry/costCenter` }),
@@ -163,7 +164,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading, PrintRights }) =
                     (a, b) => String(a?.Cost_Center_Name).localeCompare(b?.Cost_Center_Name)
                 );
                 const staffCategoryData = (staffCategory.success ? staffCategory.data : []).sort(
-                    (a, b) => String(a?.Cost_Category).localeCompare(b?.Cost_Category)
+                    (a, b) => toNumber(a?.Order_By) - toNumber(b?.Order_By)
                 );
                 const godownLocations = (godownLocationsResponse.success ? godownLocationsResponse.data : []).sort(
                     (a, b) => String(a?.Godown_Name).localeCompare(b?.Godown_Name)
@@ -261,18 +262,31 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading, PrintRights }) =
                 exp => !['CGST', 'SGST', 'IGST', 'ROUND OFF'].some(tax => stringCompare(tax, exp?.Expence_Name))
             );
             setInvoiceExpences(
-                expences.map(item => Object.fromEntries(
-                    Object.entries(salesInvoiceExpencesInfo).map(([key, value]) => {
-                        return [key, item[key] ?? value]
-                    })
-                ))
+                expences.map(item => ({
+                    ...Object.fromEntries(
+                        Object.entries(salesInvoiceExpencesInfo).map(([key, value]) => {
+                            return [key, item[key] ?? value]
+                        })
+                    ),
+                    isFromDB: true
+                }))
             );
             setStaffArray(() => {
-                const stateOfStaff = toArray(Staffs_Array).map(item => Object.fromEntries(
-                    Object.entries(salesInvoiceStaffInfo).map(([key, value]) => {
-                        return [key, item[key] ?? value]
-                    })
-                ));
+                const stateOfStaff = toArray(Staffs_Array).map(item => {
+                    const matchedCategory = toArray(baseData.staffType).find(
+                        cat => isEqualNumber(cat.Cost_Category_Id, item.Emp_Type_Id)
+                    );
+                    const categoryOrderBy = (matchedCategory && checkIsNumber(matchedCategory.Order_By))
+                        ? matchedCategory.Order_By
+                        : (item.Order_By ?? '');
+
+                    return Object.fromEntries(
+                        Object.entries(salesInvoiceStaffInfo).map(([key, value]) => {
+                            if (key === 'Order_By') return [key, categoryOrderBy];
+                            return [key, item[key] ?? value];
+                        })
+                    );
+                });
 
                 return Array.from(
                     new Map(
@@ -281,10 +295,54 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading, PrintRights }) =
                             item
                         ])
                     ).values()
-                );
+                ).sort((a, b) => {
+                    const aOrder = checkIsNumber(a?.Order_By) ? Number(a.Order_By) : null;
+                    const bOrder = checkIsNumber(b?.Order_By) ? Number(b.Order_By) : null;
+                    if (aOrder === null && bOrder === null) return 0;
+                    if (aOrder === null) return 1;
+                    if (bOrder === null) return -1;
+                    return aOrder - bOrder;
+                });
             });
         }
     }, [editValues])
+
+    useEffect(() => {
+        if (baseData.staffType.length > 0) {
+            setStaffArray(prev => {
+                let hasChanges = false;
+                const updated = prev.map(staff => {
+                    const matchedCategory = toArray(baseData.staffType).find(
+                        cat => isEqualNumber(cat.Cost_Category_Id, staff.Emp_Type_Id)
+                    );
+                    const newOrderBy = (matchedCategory && checkIsNumber(matchedCategory.Order_By))
+                        ? matchedCategory.Order_By
+                        : (staff.Order_By ?? '');
+                    if (staff.Order_By !== newOrderBy) {
+                        hasChanges = true;
+                        return { ...staff, Order_By: newOrderBy };
+                    }
+                    return staff;
+                });
+
+                const sorted = [...updated].sort((a, b) => {
+                    const aOrder = checkIsNumber(a?.Order_By) ? Number(a.Order_By) : null;
+                    const bOrder = checkIsNumber(b?.Order_By) ? Number(b.Order_By) : null;
+                    if (aOrder === null && bOrder === null) return 0;
+                    if (aOrder === null) return 1;
+                    if (bOrder === null) return -1;
+                    return aOrder - bOrder;
+                });
+
+                const isDifferentOrder = sorted.some((item, idx) => item !== prev[idx]);
+
+                if (hasChanges || isDifferentOrder) {
+                    return sorted;
+                }
+                return prev;
+            });
+        }
+    }, [baseData.staffType]);
 
     useEffect(() => {
         if (isValidNumber(invoiceInfo?.So_No)) {
@@ -313,18 +371,24 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading, PrintRights }) =
                 const newStaff = [];
 
                 if (isValidNumber(retailer.brokerId)) {
+                    const brokerCat = toArray(baseData.staffType).find(cat => isEqualNumber(cat.Cost_Category_Id, retailer.brokerTypeId));
                     newStaff.push({
+                        ...salesInvoiceStaffInfo,
                         Emp_Id: retailer.brokerId,
                         Emp_Name: retailer.brokerName,
-                        Emp_Type_Id: retailer.brokerTypeId
+                        Emp_Type_Id: retailer.brokerTypeId,
+                        Order_By: (brokerCat && checkIsNumber(brokerCat.Order_By)) ? brokerCat.Order_By : ''
                     });
                 }
 
                 if (isValidNumber(retailer.transporterId)) {
+                    const transCat = toArray(baseData.staffType).find(cat => isEqualNumber(cat.Cost_Category_Id, retailer.transporterTypeId));
                     newStaff.push({
+                        ...salesInvoiceStaffInfo,
                         Emp_Id: retailer.transporterId,
                         Emp_Name: retailer.transporterName,
-                        Emp_Type_Id: retailer.transporterTypeId
+                        Emp_Type_Id: retailer.transporterTypeId,
+                        Order_By: (transCat && checkIsNumber(transCat.Order_By)) ? transCat.Order_By : ''
                     });
                 }
 
@@ -345,10 +409,17 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading, PrintRights }) =
                     }
                 });
 
-                return updatedStaff;
+                return updatedStaff.sort((a, b) => {
+                    const aOrder = checkIsNumber(a?.Order_By) ? Number(a.Order_By) : null;
+                    const bOrder = checkIsNumber(b?.Order_By) ? Number(b.Order_By) : null;
+                    if (aOrder === null && bOrder === null) return 0;
+                    if (aOrder === null) return 1;
+                    if (bOrder === null) return -1;
+                    return aOrder - bOrder;
+                });
             });
         }
-    }, [invoiceInfo.Retailer_Id, baseData.retailers.length, editValues])
+    }, [invoiceInfo.Retailer_Id, baseData.retailers.length, editValues, baseData.staffType])
 
     useEffect(() => {
         if (baseData.stockItemLedgerName.length > 0 && !editValues?.Stock_Item_Ledger_Name) {
@@ -436,7 +507,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading, PrintRights }) =
                 const newDefaults = defaultStaffTypesData.filter(def =>
                     !pre.some(p => isEqualNumber(p.Emp_Type_Id, def.Emp_Type_Id))
                 );
-                return [...pre, ...newDefaults];
+                return [...pre, ...newDefaults].sort((a, b) => toNumber(a?.Order_By) - toNumber(b?.Order_By));
             })
         }
     }, [baseData.staffType, defaultStaffOption])
@@ -607,7 +678,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading, PrintRights }) =
     }, [invoiceProducts, baseData.products, IS_IGST, isNotTaxableBill, isInclusive, invExpencesTotal, invoiceExpences, Total_Invoice_value]);
 
     useEffect(() => {
-        if (taxSplitUp?.roundOff && taxSplitUp?.roundOff !== invoiceInfo.Round_off) {
+        if (taxSplitUp?.roundOff !== undefined && taxSplitUp?.roundOff !== invoiceInfo.Round_off) {
             setInvoiceInfo(pre => ({ ...pre, Round_off: taxSplitUp.roundOff }));
         }
     }, [taxSplitUp?.roundOff]);
@@ -626,14 +697,14 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading, PrintRights }) =
                 setBaseData(prev => {
                     const existingRetailers = [...prev.retailers];
                     const newRetailers = toArray(res.data);
-                    
+
                     const uniqueRetailersMap = new Map();
                     existingRetailers.forEach(r => uniqueRetailersMap.set(r.Retailer_Id, r));
                     newRetailers.forEach(r => uniqueRetailersMap.set(r.Retailer_Id, r));
 
                     const uniqueRetailers = Array.from(uniqueRetailersMap.values())
                         .sort((a, b) => String(a?.Retailer_Name).localeCompare(b?.Retailer_Name));
-                    
+
                     return { ...prev, retailers: uniqueRetailers };
                 });
             }
@@ -777,11 +848,21 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading, PrintRights }) =
             })
         ));
 
-        const stateOfStaff = toArray(Staffs_Array).map(item => Object.fromEntries(
-            Object.entries(salesInvoiceStaffInfo).map(([key, value]) => {
-                return [key, item[key] ?? value]
-            })
-        ));
+        const stateOfStaff = toArray(Staffs_Array).map(item => {
+            const matchedCategory = toArray(baseData.staffType).find(
+                cat => isEqualNumber(cat.Cost_Category_Id, item.Emp_Type_Id)
+            );
+            const categoryOrderBy = (matchedCategory && checkIsNumber(matchedCategory.Order_By))
+                ? matchedCategory.Order_By
+                : (item.Order_By ?? '');
+
+            return Object.fromEntries(
+                Object.entries(salesInvoiceStaffInfo).map(([key, value]) => {
+                    if (key === 'Order_By') return [key, categoryOrderBy];
+                    return [key, item[key] ?? value];
+                })
+            );
+        });
 
         const pStaffArray = Array.from(
             new Map(
@@ -790,7 +871,14 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading, PrintRights }) =
                     item
                 ])
             ).values()
-        );
+        ).sort((a, b) => {
+            const aOrder = checkIsNumber(a?.Order_By) ? Number(a.Order_By) : null;
+            const bOrder = checkIsNumber(b?.Order_By) ? Number(b.Order_By) : null;
+            if (aOrder === null && bOrder === null) return 0;
+            if (aOrder === null) return 1;
+            if (bOrder === null) return -1;
+            return aOrder - bOrder;
+        });
 
         setPreviewData({
             invoiceInfo: pInvoiceInfo,
@@ -1381,7 +1469,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading, PrintRights }) =
                                                     <td className={tdStyle}>
                                                         <input
                                                             value={row?.Act_Qty || ''}
-                                                            type="number"
+                                                            onInput={onlynumAndNegative}
                                                             className={inputStyle}
                                                             onChange={e => changeSelectedObjects(i, 'Act_Qty', e.target.value)}
                                                             required
@@ -1390,7 +1478,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading, PrintRights }) =
                                                     <td className={tdStyle}>
                                                         <input
                                                             value={row?.Alt_Act_Qty || ''}
-                                                            type="number"
+                                                            onInput={onlynumAndNegative}
                                                             className={inputStyle}
                                                             onChange={e => changeSelectedObjects(i, 'Alt_Act_Qty', e.target.value)}
                                                         />
@@ -1400,7 +1488,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading, PrintRights }) =
                                             <td className={tdStyle}>
                                                 <input
                                                     value={row?.Bill_Qty || ''}
-                                                    type="number"
+                                                    onInput={onlynumAndNegative}
                                                     className={inputStyle}
                                                     onChange={e => changeSelectedObjects(i, 'Bill_Qty', e.target.value)}
                                                     required
@@ -1412,7 +1500,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading, PrintRights }) =
                                             <td className={tdStyle}>
                                                 <input
                                                     value={row?.Item_Rate || ''}
-                                                    type="number"
+                                                    onInput={onlynumAndNegative}
                                                     className={inputStyle}
                                                     onChange={e => changeSelectedObjects(i, 'Item_Rate', e.target.value)}
                                                     required
@@ -1448,7 +1536,7 @@ const CreateSalesInvoice = ({ loadingOn, loadingOff, isLoading, PrintRights }) =
                                             <td className={tdStyle}>
                                                 <input
                                                     value={row?.Amount || ''}
-                                                    type="number"
+                                                    onInput={onlynumAndNegative}
                                                     className={inputStyle}
                                                     onChange={e => changeSelectedObjects(i, 'Amount', e.target.value)}
                                                     required

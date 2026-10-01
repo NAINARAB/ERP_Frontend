@@ -1177,9 +1177,29 @@ const TripSheets = ({ loadingOn, loadingOff, DeleteRights }) => {
                 onClose={() => setFilters(pre => ({ ...pre, cancelDialog: false }))}
                 title="Cancel Trip sheet"
                 onSubmit={cancelTrip}
-                submitText="Cancel Invoice"
+                submitText="Cancel entry"
             >
-                Do you want to cancel the Trip sheet?
+                <p>Do you want to cancel the Trip sheet?</p>
+                <table className="table table-borderless">
+                    <tbody>
+                        <tr>
+                            <td>Concern</td>
+                            <td>{selectedRow?.concernGet || '-'}</td>
+                        </tr>
+                        <tr>
+                            <td>Trip No</td>
+                            <td>{selectedRow?.TR_INV_ID || '-'}</td>
+                        </tr>
+                        <tr>
+                            <td>Date</td>
+                            <td>{selectedRow?.Trip_Date ? LocalDate(selectedRow?.Trip_Date) : '-'}</td>
+                        </tr>
+                        <tr>
+                            <td>Vehicle</td>
+                            <td>{selectedRow?.Vehicle_No || '-'}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </AppDialog>
         </>
     )

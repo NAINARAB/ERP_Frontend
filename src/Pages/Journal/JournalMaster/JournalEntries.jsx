@@ -1,6 +1,7 @@
 import { useMemo, useCallback } from "react";
 import { Button } from "@mui/material";
-import { rid } from "../../../Components/functions";
+import { rid, checkIsNumber } from "../../../Components/functions";
+import { fetchLink } from "../../../Components/fetchComponent";
 import { journalEntriesInfoIV } from "./variable";
 import LineCard from "./lineCard";
 
@@ -14,7 +15,48 @@ const JournalEntriesPanel = ({
     setJournalBillReference,
     onOpenRef,
     totals = { sumOfDebit: 0, sumOfCredit: 0, diff: 0 },
+    JournalAutoId = "",
 }) => {
+
+    const updateLine = useCallback(
+        (LineId, patch) => setJournalEntriesInfo(prev => prev.map(r => (r.LineId === LineId ? { ...r, ...patch } : r))),
+        [setJournalEntriesInfo]
+    );
+
+    const addLine = useCallback(
+        (side) =>
+            setJournalEntriesInfo(prev => [
+                ...prev,
+                { ...journalEntriesInfoIV, LineId: rid(), DrCr: side, Amount: 0, Acc_Id: null, AccountGet: "" },
+            ]),
+        [setJournalEntriesInfo]
+    );
+
+    const removeLine = useCallback(
+        (LineId) => setJournalEntriesInfo(prev => prev.filter(r => r.LineId !== LineId)),
+        [setJournalEntriesInfo]
+    );
+
+    const fetchPendingReferences = useCallback((accId, lineId) => {
+        if (!checkIsNumber(accId)) return;
+        updateLine(lineId, { isPendingRefLoading: true });
+        fetchLink({
+            address: `journal/accountPendingReference?Acc_Id=${accId}&JournalAutoId=${JournalAutoId || ''}`
+        }).then((data) => {
+            updateLine(lineId, {
+                pendingRefDetails: data?.success ? data.data : [],
+                isPendingRefFetched: true,
+                isPendingRefLoading: false
+            });
+        }).catch((err) => {
+            console.error("Pending reference fetch error", err);
+            updateLine(lineId, {
+                pendingRefDetails: [],
+                isPendingRefFetched: true,
+                isPendingRefLoading: false
+            });
+        });
+    }, [JournalAutoId, updateLine]);
 
     const usedDr = useMemo(
         () => new Set(debitLines.filter((r) => r.Acc_Id != null).map((r) => Number(r.Acc_Id))),
@@ -34,25 +76,6 @@ const JournalEntriesPanel = ({
     const isOptionDisabledCr = useCallback(
         (opt, entry) => usedCr.has(opt.value) && Number(entry.Acc_Id) !== opt.value,
         [usedCr]
-    );
-
-    const updateLine = useCallback(
-        (LineId, patch) => setJournalEntriesInfo(prev => prev.map(r => (r.LineId === LineId ? { ...r, ...patch } : r))),
-        [setJournalEntriesInfo]
-    );
-
-    const addLine = useCallback(
-        (side) =>
-            setJournalEntriesInfo(prev => [
-                ...prev,
-                { ...journalEntriesInfoIV, LineId: rid(), DrCr: side, Amount: 0, Acc_Id: null, AccountGet: "" },
-            ]),
-        [setJournalEntriesInfo]
-    );
-
-    const removeLine = useCallback(
-        (LineId) => setJournalEntriesInfo(prev => prev.filter(r => r.LineId !== LineId)),
-        [setJournalEntriesInfo]
     );
 
     const { sumOfDebit, sumOfCredit, diff } = totals;
@@ -78,6 +101,7 @@ const JournalEntriesPanel = ({
                             openRef={onOpenRef}
                             journalBillReference={journalBillReference}
                             setJournalBillReference={setJournalBillReference}
+                            fetchPendingReferences={fetchPendingReferences}
                         />
                     ))}
                     <div className="text-end">
@@ -99,6 +123,7 @@ const JournalEntriesPanel = ({
                             openRef={onOpenRef}
                             journalBillReference={journalBillReference}
                             setJournalBillReference={setJournalBillReference}
+                            fetchPendingReferences={fetchPendingReferences}
                         />
                     ))}
                     <div className="text-end">

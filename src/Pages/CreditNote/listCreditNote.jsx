@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
-import { Addition, getSessionFiltersByPageId, getSessionUser, isEqualNumber, ISOString, LocalDateWithTime, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber } from "../../Components/functions";
+import { Addition, getSessionFiltersByPageId, getSessionUser, isEqualNumber, ISOString, LocalDate, LocalDateWithTime, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber } from "../../Components/functions";
 import { Add, Cancel, Edit, FilterAlt, Print, Search, Visibility } from "@mui/icons-material";
 import { dbStatus } from "../Sales/convertedStatus";
 import { fetchLink } from "../../Components/fetchComponent";
@@ -463,7 +463,27 @@ const CreditNoteList = ({ loadingOn, loadingOff, AddRights, EditRights, DeleteRi
                 onSubmit={cancelInvoice}
                 submitText="Cancel Invoice"
             >
-                Do you want to cancel the invoice?
+                <p>Do you want to cancel the invoice?</p>
+                <table className="table table-borderless">
+                    <tbody>
+                        <tr>
+                            <td>Party</td>
+                            <td>{selectedInvoice?.Retailer_Name || '-'}</td>
+                        </tr>
+                        <tr>
+                            <td>Invoice No</td>
+                            <td>{selectedInvoice?.CR_Inv_No || '-'}</td>
+                        </tr>
+                        <tr>
+                            <td>Date</td>
+                            <td>{selectedInvoice?.CR_Date ? LocalDate(selectedInvoice?.CR_Date) : '-'}</td>
+                        </tr>
+                        <tr>
+                            <td>Amount</td>
+                            <td>{NumberFormat(selectedInvoice?.Total_Invoice_value)}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </AppDialog>
 
             <CreditNotePrintModal

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Button, Dialog, Tooltip, IconButton, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import Select from "react-select";
 import { customSelectStyles } from "../../Components/tablecolumn";
-import { Addition, getSessionFiltersByPageId, isEqualNumber, ISOString, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber } from "../../Components/functions";
+import { Addition, getSessionFiltersByPageId, isEqualNumber, ISOString, LocalDate, NumberFormat, reactSelectFilterLogic, setSessionFilters, toArray, toNumber } from "../../Components/functions";
 import InvoiceBillTemplate from "../Sales/SalesReportComponent/newInvoiceTemplate";
 import { Add, Cancel, Edit, FilterAlt, Search, Visibility } from "@mui/icons-material";
 import { fetchLink } from "../../Components/fetchComponent";
@@ -371,6 +371,7 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, EditRights, DeleteRights, pa
                                                         ...pre,
                                                         cancelPIN_Id: row.PIN_Id,
                                                         cancelDialog: true,
+                                                        cancelRow: row,
                                                     }))
                                                 },
                                                 icon: <Cancel fontSize="small" color="primary" />,
@@ -619,9 +620,33 @@ const PurchaseOrderList = ({ loadingOn, loadingOff, EditRights, DeleteRights, pa
             >
                 <DialogTitle>Confirmation</DialogTitle>
                 <DialogContent>
-                    {dialog.isCanceled
-                        ? 'This invoice has already been canceled. Do you want to restore it?'
-                        : 'Are you sure you want to cancel this invoice? This action can be undone later.'}
+                    <p>
+                        {dialog.isCanceled
+                            ? 'This invoice has already been canceled. Do you want to restore it?'
+                            : 'Are you sure you want to cancel this invoice? This action can be undone later.'}
+                    </p>
+                    {dialog?.cancelRow && (
+                        <table className="table table-borderless">
+                            <tbody>
+                                <tr>
+                                    <td>Party</td>
+                                    <td>{dialog.cancelRow?.Retailer_Name || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <td>Invoice No</td>
+                                    <td>{dialog.cancelRow?.Po_Inv_No || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <td>Date</td>
+                                    <td>{dialog.cancelRow?.Po_Entry_Date ? LocalDate(dialog.cancelRow?.Po_Entry_Date) : '-'}</td>
+                                </tr>
+                                <tr>
+                                    <td>Amount</td>
+                                    <td>{NumberFormat(dialog.cancelRow?.Total_Invoice_value)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    )}
                 </DialogContent>
 
                 <DialogActions>

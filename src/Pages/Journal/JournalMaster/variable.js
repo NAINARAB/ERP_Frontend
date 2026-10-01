@@ -37,6 +37,9 @@ export const journalEntriesInfoIV = {
     Amount: 0,
     Remarks: '',
     BillEntries: [],
+    pendingRefDetails: [],
+    isPendingRefFetched: false,
+    isPendingRefLoading: false,
 }
 
 export const journalBillReferenceIV = {

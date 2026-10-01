@@ -22,7 +22,7 @@ const ExpencesOfSalesInvoice = ({
 
     const coolieExp = useMemo(() => {
         const exp = invoiceProducts.reduce((pre, cur) => {
-            const quantity = cur?.Alt_Act_Qty;
+            const quantity = toNumber(cur?.Alt_Act_Qty) || toNumber(cur?.Alt_Bill_Qty) || toNumber(cur?.Bag) || 0;
             const coolieExp = toNumber(findProductDetails(products, cur?.Item_Id)?.Coolie);
             const coolieExpAmount = Multiplication(coolieExp, quantity);
             return Addition(pre, coolieExpAmount);
@@ -40,6 +40,7 @@ const ExpencesOfSalesInvoice = ({
 
                 if (field === 'Expence_Value') {
                     updated.isManuallyModified = true;
+                    updated.Is_Manual = 1;
                     const
                         Cgst = item.Cgst ? toNumber(item.Cgst) : 0,
                         Sgst = item.Sgst ? toNumber(item.Sgst) : 0,
@@ -114,23 +115,32 @@ const ExpencesOfSalesInvoice = ({
     };
 
     useEffect(() => {
-        if (isEdit) return;
+        if (!Array.isArray(products) || products.length === 0 || !Array.isArray(expenceMaster) || expenceMaster.length === 0) return;
 
         setInvoiceExpences(prev => {
             let hasChanges = false;
             const newExpenses = prev.map(item => {
-                if (item.isManuallyModified) return item;
+                if (item.Is_Manual === 1 || item.isManuallyModified) return item;
 
                 const selected = expenceMaster.find(exp => isEqualNumber(exp.Id, item.Expense_Id));
                 if (!selected) return item;
 
-                let newValue = item.Expence_Value;
+                let autoCalculatedValue = item.Expence_Value;
 
                 if (stringCompare(selected.Expence_Name, 'COOLIE EXPENSES')) {
-                    newValue = RoundNumber(coolieExp);
+                    autoCalculatedValue = RoundNumber(coolieExp);
                 } else if (isValidNumber(selected.percentageValue)) {
-                    newValue = RoundNumber(getPercentage(productTotal, selected.percentageValue));
+                    autoCalculatedValue = RoundNumber(getPercentage(productTotal, selected.percentageValue));
                 }
+
+                // console.log('manageExpences CHECK:', {
+                //     Expence_Name: selected?.Expence_Name,
+                //     Is_Manual: item.Is_Manual,
+                //     isManuallyModified: item.isManuallyModified,
+                //     Expence_Value: item.Expence_Value,
+                //     autoCalculatedValue
+                // });
+                let newValue = autoCalculatedValue;
 
                 if (!isEqualNumber(newValue, item.Expence_Value)) {
                     hasChanges = true;
@@ -152,7 +162,7 @@ const ExpencesOfSalesInvoice = ({
             });
             return hasChanges ? newExpenses : prev;
         });
-    }, [coolieExp, productTotal, expenceMaster, IS_IGST, taxType, setInvoiceExpences, isEdit, invoiceProducts]);
+    }, [coolieExp, productTotal, expenceMaster, IS_IGST, taxType, setInvoiceExpences, isEdit, invoiceProducts, invoiceExpences]);
 
     const addNewRow = () => {
         setInvoiceExpences(prev => [...prev, { ...salesInvoiceExpencesInfo, Sno: prev.length }]);
@@ -175,7 +185,7 @@ const ExpencesOfSalesInvoice = ({
                             <tr>
                                 {[
                                     'S.No', 'Expense',
-                                    'Expense Value', 'Action'
+                                    'Expense Value', 'Auto Calculate', 'Action'
                                 ].map(
                                     (o, i) => <th className="fa-13 bg-light" key={i}>{o}</th>
                                 )}
@@ -222,6 +232,27 @@ const ExpencesOfSalesInvoice = ({
                                                 onChange={e => {
                                                     handleInputChange(index, 'Expence_Value', e.target.value)
                                                 }}
+                                            />
+                                        </td>
+                                        <td className="text-center vctr">
+                                            <input 
+                                                type="checkbox" 
+                                                title="Enable auto calculation"
+                                                checked={row.Is_Manual !== 1} 
+                                                onChange={(e) => {
+                                                    const isChecked = e.target.checked;
+                                                    setInvoiceExpences(prev =>
+                                                        prev.map((item, i) => {
+                                                            if (i !== index) return item;
+                                                            return { 
+                                                                ...item, 
+                                                                Is_Manual: isChecked ? 0 : 1, 
+                                                                isManuallyModified: !isChecked 
+                                                            };
+                                                        })
+                                                    );
+                                                }}
+                                                style={{ cursor: 'pointer', transform: 'scale(1.5)' }}
                                             />
                                         </td>
                                         <td className="p-0 vctr  text-center ">

@@ -1,5 +1,6 @@
 // import { useEffect, useMemo } from "react";
 import { 
+    Addition,
     isEqualNumber, NumberFormat, numberToWords, 
     onlynumAndNegative, RoundNumber,
     toNumber, 
@@ -142,12 +143,12 @@ const SalesInvoiceTaxDetails = ({
                         <td className="border p-2">Round Off</td>
                         <td className="border p-0">
                             <input
-                                value={invoiceInfo?.Round_off || taxSplitUp?.roundOff || 0}
+                                value={invoiceInfo?.Round_off ?? ''}
                                 className="cus-inpt p-2 m-0 border-0"
                                 onInput={onlynumAndNegative}
                                 onChange={e => setInvoiceInfo(pre => ({ 
                                     ...pre, 
-                                    Round_off: parseFloat(e.target.value) || 0 
+                                    Round_off: e.target.value 
                                 }))}
                             />
                         </td>
@@ -155,7 +156,7 @@ const SalesInvoiceTaxDetails = ({
                     <tr>
                         <td className="border p-2">Total</td>
                         <td className="border p-2">
-                            {NumberFormat(Math.round(Total_Invoice_value))}
+                            {NumberFormat(Addition(Total_Invoice_value, invoiceInfo?.Round_off || 0))}
                         </td>
                     </tr>
                 </tbody>

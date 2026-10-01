@@ -1,13 +1,15 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
-import { useEffect, useState } from "react";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
+import { Close } from "@mui/icons-material";
+import { useEffect, useState, useMemo } from "react";
 import { fetchLink } from "../../../Components/fetchComponent";
-import { Addition, Subraction, isEqualNumber, checkIsNumber, rid, LocalDate, onlynum, toArray, stringCompare } from "../../../Components/functions";
+import { Addition, Subraction, isEqualNumber, checkIsNumber, rid, LocalDate, onlynum, toArray, stringCompare, NumberFormat } from "../../../Components/functions";
 import { journalBillReferenceIV } from "./variable";
 
 const BillRefDialog = ({
     open,
     onClose,
     line,
+    pendingRefData,
     journalBillReference,
     setJournalBillReference,
     JournalAutoId,
@@ -19,19 +21,38 @@ const BillRefDialog = ({
     const Acc_Id = line?.Acc_Id;
     const DrCr = line?.DrCr;
 
-    const [pendingRefDetails, setPendingRefDetails] = useState([]);
+    const [fallbackRefDetails, setFallbackRefDetails] = useState([]);
+
+    const pendingRefDetails = useMemo(() => {
+        if (Array.isArray(pendingRefData)) {
+            return pendingRefData;
+        }
+        if (Array.isArray(line?.pendingRefDetails)) {
+            return line.pendingRefDetails;
+        }
+        return fallbackRefDetails;
+    }, [pendingRefData, line?.pendingRefDetails, fallbackRefDetails]);
 
     useEffect(() => {
-        if (!open || !checkIsNumber(Acc_Id)) return;
-        setPendingRefDetails([]);
+        if (!open || !checkIsNumber(Acc_Id)) {
+            setFallbackRefDetails([]);
+            return;
+        }
+
+        // If data is already provided via props or line, or line is currently fetching, skip fallback fetch
+        if (Array.isArray(pendingRefData) || Array.isArray(line?.pendingRefDetails) || line?.isPendingRefLoading) {
+            return;
+        }
+
+        setFallbackRefDetails([]);
         fetchLink({
-            address: `journal/accountPendingReference?
-            Acc_Id=${Acc_Id}&JournalAutoId=${JournalAutoId}`,
-            loadingOn, loadingOff
+            address: `journal/accountPendingReference?Acc_Id=${Acc_Id}&JournalAutoId=${JournalAutoId || ''}`,
+            loadingOn,
+            loadingOff
         }).then(
-            (data) => setPendingRefDetails(data?.success ? data.data : [])
-        ).catch(() => setPendingRefDetails([]));
-    }, [open, Acc_Id, JournalAutoId]);
+            (data) => setFallbackRefDetails(data?.success ? data.data : [])
+        ).catch(() => setFallbackRefDetails([]));
+    }, [open, Acc_Id, JournalAutoId, pendingRefData, line?.pendingRefDetails, line?.isPendingRefLoading, loadingOn, loadingOff]);
 
     const keyMatch = (b, row) =>
         b.LineId === LineId &&
@@ -82,23 +103,84 @@ const BillRefDialog = ({
         });
     };
 
+    const { selectedCount, totalAmount } = useMemo(() => {
+        let count = 0;
+        let total = 0;
+        const refList = toArray(journalBillReference);
+        pendingRefDetails.forEach((row) => {
+            const checked = refList.some(
+                (b) => b.RefNo === row.voucherNumber && b.DrCr !== row?.accountSide
+            );
+            if (checked) {
+                count += 1;
+                const existing = findExisting(refList, row);
+                const amt = Number(existing?.Amount) || 0;
+                total = Addition(total, amt);
+            }
+        });
+        return { selectedCount: count, totalAmount: total };
+    }, [pendingRefDetails, journalBillReference, LineId, Acc_Id, DrCr]);
+
     return (
         <Dialog open={open} onClose={onClose} fullScreen keepMounted>
-            <DialogTitle>Add Bill-Reference</DialogTitle>
+            <DialogTitle className="d-flex justify-content-between align-items-center flex-wrap gap-2 py-2 px-3 border-bottom">
+                <div className="d-flex align-items-center gap-2">
+                    <span className="fw-bold fa-16">Add Bill-Reference</span>
+                    {line?.AccountGet && (
+                        <span className="text-secondary fa-14">({line?.AccountGet})</span>
+                    )}
+                </div>
+
+                <div className="d-flex align-items-center gap-2 flex-wrap">
+                    <div className="badge bg-light text-dark border px-3 py-2 fa-13 fw-normal">
+                        <span className="text-secondary me-1">Selected Bills:</span>
+                        <span className="fw-bold text-primary">{selectedCount}</span>
+                    </div>
+                    <div className="badge bg-light text-dark border px-3 py-2 fa-13 fw-normal">
+                        <span className="text-secondary me-1">Reference Amount:</span>
+                        <span className="fw-bold text-success">{NumberFormat(totalAmount)}</span>
+                    </div>
+                    {checkIsNumber(line?.Amount) && Number(line?.Amount) > 0 && (
+                        <div className="badge bg-light text-dark border px-3 py-2 fa-13 fw-normal">
+                            <span className="text-secondary me-1">Journal Amount:</span>
+                            <span className="fw-bold text-dark">{NumberFormat(line?.Amount)}</span>
+                        </div>
+                    )}
+                    <IconButton size="small" onClick={onClose} aria-label="close">
+                        <Close className="fa-18" />
+                    </IconButton>
+                </div>
+            </DialogTitle>
             <DialogContent>
                 {!line ? (
                     <div className="text-muted">Select a line…</div>
+                ) : line?.isPendingRefLoading ? (
+                    <div className="d-flex justify-content-center align-items-center py-5 text-secondary">
+                        <div className="spinner-border spinner-border-sm me-2 text-primary" role="status"></div>
+                        <span className="fa-14">Loading pending references...</span>
+                    </div>
                 ) : (
-                    <div className="table-responsive">
+                    <div className="table-container table-responsive" style={{ maxHeight: "calc(100vh - 160px)", overflowY: "auto" }}>
                         <table className="table table-bordered m-0">
-                            <thead>
+                            <thead className="table-light">
                                 <tr>
                                     {[
                                         "Sno", "Voucher-Number", 'Voucher-Ref', "Date",
                                         "Source", "Dr/Cr", "Total", "Total Ref",
                                         "Journal", "Pay/Rec", "Pending", 'Narration', "#"
                                     ].map((c) => (
-                                        <th key={c} className="fa-13">{c}</th>
+                                        <th
+                                            key={c}
+                                            className="fa-13"
+                                            style={{
+                                                position: "sticky",
+                                                top: 0,
+                                                backgroundColor: "#f8f9fa",
+                                                zIndex: 1
+                                            }}
+                                        >
+                                            {c}
+                                        </th>
                                     ))}
                                 </tr>
                             </thead>
@@ -159,7 +241,7 @@ const BillRefDialog = ({
                                 })}
                                 {pendingRefDetails.length === 0 && (
                                     <tr>
-                                        <td colSpan={12} className="text-center text-muted">
+                                        <td colSpan={13} className="text-center text-muted">
                                             No pending references.
                                         </td>
                                     </tr>

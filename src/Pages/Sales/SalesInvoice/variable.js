@@ -164,7 +164,8 @@ export const salesInvoiceExpencesInfo = {
     Sgst_Amo: 0,
     Igst: 0,
     Igst_Amo: 0,
-    Expence_Value: 0
+    Expence_Value: 0,
+    Is_Manual: 0
 }
 
 export const salesInvoiceStaffInfo = {
@@ -173,6 +174,7 @@ export const salesInvoiceStaffInfo = {
     Emp_Id: '',
     Emp_Name: '',       // for Front-end purpose
     Emp_Type_Id: '',
+    Order_By: '',
 }
 
 export const setAddress = (address, setFun) => {
@@ -197,6 +199,7 @@ export const defaultStaffTypes = (costTypes = []) => {
     const defaultStaffTypes = ['Broker', 'Owners', 'Attendant', 'Details', 'Transport']
     return toArray(costTypes).filter(staff => defaultStaffTypes.includes(staff?.Cost_Category)).map(staff => ({
         ...salesInvoiceStaffInfo,
-        Emp_Type_Id: staff?.Cost_Category_Id
+        Emp_Type_Id: staff?.Cost_Category_Id,
+        Order_By: staff?.Order_By ?? ''
     }))
 }
